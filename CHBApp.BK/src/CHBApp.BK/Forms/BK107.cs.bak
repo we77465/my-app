@@ -1,0 +1,49 @@
+using System.IO;
+using System.Windows.Forms;
+using CHBApp.BK.Models;
+using CHBApp.BK.Services;
+
+namespace CHBApp.BK.Forms;
+
+/// <summary>BK107 薪資整批輸入(Excel格式)</summary>
+public partial class BK107 : Form
+{
+    public BK107() => InitializeComponent();
+    private void btnPick_Click(object s, EventArgs e)
+    {
+        using var d = new OpenFileDialog { Filter = "Excel/CSV (*.xlsx;*.csv)|*.xlsx;*.csv" };
+        if (d.ShowDialog(this) == DialogResult.OK) txtPath.Text = d.FileName;
+    }
+    private void btnRun_Click(object s, EventArgs e)
+    {
+        log.Clear();
+        if (!File.Exists(txtPath.Text))
+        {
+            log.AppendText("檔案不存在，模擬整批匯入 5 筆。\r\n");
+            for (int i = 1; i <= 5; i++)
+            {
+                BkacRepository.Employees.Add(new Bkac
+                {
+                    EMP_NO = $"X{i:0000}", EMP_NAME = $"匯入{i}", EMP_ACCNO = $"00951850{(900000+i):000000}",
+                    EMP_PAY = 30000 + i*100, EMP_FLAG = "1", EMP_KIND = "01"
+                });
+            }
+            lblStat.Text = "模擬完成 5 筆"; return;
+        }
+        int n = 0, replace = 0, addn = 0;
+        foreach (var ln in File.ReadAllLines(txtPath.Text).Skip(1))
+        {
+            var c = ln.Split(',');
+            if (c.Length < 4) continue;
+            var no = c[0].Trim(); var name = c[1].Trim(); var acc = c[2].Trim();
+            decimal.TryParse(c[3], out var pay);
+            var emp = BkacRepository.Employees.FirstOrDefault(x => x.EMP_NO == no);
+            if (rbReplace.Checked && emp != null) { emp.EMP_PAY = pay; replace++; }
+            else if (emp == null) { BkacRepository.Employees.Add(new Bkac{EMP_NO=no,EMP_NAME=name,EMP_ACCNO=acc,EMP_PAY=pay,EMP_FLAG="1",EMP_KIND="01"}); addn++; }
+            n++;
+        }
+        log.AppendText($"完成。資料總筆數: {n}\r\n  覆寫: {replace}  新增: {addn}\r\n");
+        lblStat.Text = $"完成 {n} 筆";
+    }
+    private void btnExit_Click(object s, EventArgs e) => Close();
+}

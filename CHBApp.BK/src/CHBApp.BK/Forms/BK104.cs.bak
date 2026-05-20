@@ -1,0 +1,23 @@
+using System.Windows.Forms;
+using CHBApp.BK.Services;
+
+namespace CHBApp.BK.Forms;
+
+/// <summary>
+/// BK104 清除本月薪資 - SCT 真實版面只有 4 元件:
+///   標題 "清除本月薪資", 按鈕 "清除薪資", "說明", "離開"
+/// </summary>
+public partial class BK104 : Form
+{
+    public BK104() => InitializeComponent();
+    private void btnClear_Click(object s, EventArgs e)
+    {
+        if (MessageBox.Show("是否清除員工檔內薪資資料？", "注意",
+            MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes) return;
+        foreach (var emp in BkacRepository.Employees) emp.EMP_PAY = 0;
+        MessageBox.Show("薪資清除完成。", "訊息");
+    }
+    private void btnHelp_Click(object s, EventArgs e) =>
+        MessageBox.Show("提供將員工檔內薪資全部清為 0。\n完成後按 <離開> 結束清除作業。", "說明");
+    private void btnExit_Click(object s, EventArgs e) => Close();
+}

@@ -1,0 +1,35 @@
+namespace CHBApp.BK.Models;
+
+/// <summary>
+/// 員工檔 (BKAC) - 完全對應原 CHBK.EXE 的 BKAC.DBF / BKAC_STRUCT.DOC 規格
+/// 從 SCT 與規格書交叉確認的 13 個欄位：
+///   EMP_NO       C(10)  員工編號
+///   EMP_NAME     C(10)  員工姓名
+///   EMP_ACCNO    C(14)  存款帳號 (PCCUT 14 碼)
+///   EMP_PAY      N(12,2) 本月薪資
+///   EMP_PID      C(10)  身份字號/統編
+///   EMP_FLAG     C(1)   存提區分 (1=轉提 / 2=轉存)
+///   EMP_FLAG1    C(1)   身份證字號檢查旗標 (Y/N)
+///   EMP_KIND     C(2)   轉帳類別 (51=薪資 / 97=客戶自定)
+///   EMP_KNAME    C(10)  轉帳名稱 (僅 EMP_KIND=97 時使用)
+///   MORF         C(1)   身份別 (1=本國人 / 2=外國人 / 3=公司)
+///   FAXNO        C(10)  傳真號碼
+///   MAILADD      C(60)  Email/地址
+///   CONTENT      C(75)  傳真或 Email 內容
+/// </summary>
+public class Bkac
+{
+    public string EMP_NO     { get; set; } = "";
+    public string EMP_NAME   { get; set; } = "";
+    public string EMP_ACCNO  { get; set; } = "";
+    public decimal EMP_PAY   { get; set; }
+    public string EMP_PID    { get; set; } = "";
+    public string EMP_FLAG   { get; set; } = "2";   // 預設轉存
+    public string EMP_FLAG1  { get; set; } = "Y";   // 預設檢查身份證
+    public string EMP_KIND   { get; set; } = "51";  // 預設薪資
+    public string EMP_KNAME  { get; set; } = "薪資";
+    public string MORF       { get; set; } = "1";   // 預設本國人
+    public string FAXNO      { get; set; } = "";
+    public string MAILADD    { get; set; } = "";
+    public string CONTENT    { get; set; } = "";
+}

@@ -1,0 +1,12 @@
+﻿[start] 05/20/2026 18:10:53
+cwd: D:\work
+git.exe : From https://github.com/we77465/my-app
+位於 線路:1 字元:2
++ (& git pull origin main 2>&1) | Out-File -FilePath $logPath -Append - ...
++  ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (From https://github.com/we77465/my-app:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+ * branch            main       -> FETCH_HEAD
+Already up to date.
+[DONE] 05/20/2026 18:10:54

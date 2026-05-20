@@ -1,0 +1,12 @@
+Collecting python-docx
+  Obtaining dependency information for python-docx from https://files.pythonhosted.org/packages/d0/00/1e03a4989fa5795da308cd774f05b704ace555a70f9bf9d3be057b680bcf/python_docx-1.2.0-py3-none-any.whl.metadata
+  Downloading python_docx-1.2.0-py3-none-any.whl.metadata (2.0 kB)
+Requirement already satisfied: lxml>=3.1.0 in c:\users\ken\appdata\local\programs\python\python312\lib\site-packages (from python-docx) (6.0.2)
+Requirement already satisfied: typing_extensions>=4.9.0 in c:\users\ken\appdata\local\programs\python\python312\lib\site-packages (from python-docx) (4.15.0)
+Downloading python_docx-1.2.0-py3-none-any.whl (252 kB)
+   -------------------------------------- 253.0/253.0 kB 370.0 kB/s eta 0:00:00
+Installing collected packages: python-docx
+Successfully installed python-docx-1.2.0
+System.Management.Automation.RemoteException
+[notice] A new release of pip is available: 23.2.1 -> 26.1.1
+[notice] To update, run: python.exe -m pip install --upgrade pip

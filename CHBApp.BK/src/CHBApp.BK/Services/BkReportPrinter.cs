@@ -1,0 +1,428 @@
+using System.Drawing;
+using System.Drawing.Printing;
+using System.Windows.Forms;
+using CHBApp.BK.Models;
+
+namespace CHBApp.BK.Services;
+
+/// <summary>
+/// BK 模組統一列印 / 預覽服務 - 對應原 CHBK.EXE 的「預覽」「列印」按鈕。
+/// 共支援 5 種標準報表：
+///   1. 員工基本資料表          (BK101)
+///   2. 本月薪資清冊            (BK102/BK103/BK202/BK301)
+///   3. 本月薪資清冊 (含起迄)   (BK302)
+///   4. 媒體遞送單              (BK401~BK408 / BK504~BK505)
+///   5. 二次扣帳明細            (BK502 失敗 / BK503 成功)
+/// </summary>
+public static class BkReportPrinter
+{
+    public enum ReportType
+    {
+        EmployeeMaster,       // 員工基本資料表 (BK101)
+        PayrollList,          // 本月薪資清冊
+        PayrollByRange,       // 本月薪資清冊 (起迄)
+        DispatchSlip,         // 媒體遞送單 (BK401~)
+        SecondDebitDetail     // 二扣明細 (BK502/BK503)
+    }
+
+    public class ReportConfig
+    {
+        public ReportType Type { get; set; }
+        public string Title { get; set; } = "";
+        public string SubTitle { get; set; } = "";
+        public List<Bkac>? Employees { get; set; }
+        public List<BkacResult>? Results { get; set; }
+        public DateTime PayDate { get; set; } = DateTime.Today;
+        public string FromEmpNo { get; set; } = "";
+        public string ToEmpNo { get; set; } = "";
+        public bool IsSuccess { get; set; }   // SecondDebitDetail 用
+        public string SortBy { get; set; } = "員工編號";
+        public decimal Rate { get; set; } = 1m;
+    }
+
+    /// <summary>顯示列印預覽視窗（含完整分頁）</summary>
+    public static void ShowPreview(ReportConfig cfg)
+    {
+        using var doc = BuildDocument(cfg);
+        using var dlg = new PrintPreviewDialog
+        {
+            Document = doc,
+            Width  = 900,
+            Height = 700,
+            StartPosition = FormStartPosition.CenterParent
+        };
+        // 把工具列縮放預設成 100%
+        if (dlg.PrintPreviewControl != null)
+            dlg.PrintPreviewControl.Zoom = 1.0;
+        dlg.ShowDialog();
+    }
+
+    /// <summary>列印 (帶 PrintDialog 讓使用者選印表機)</summary>
+    public static void Print(ReportConfig cfg)
+    {
+        using var doc = BuildDocument(cfg);
+        using var dlg = new PrintDialog { Document = doc, UseEXDialog = true };
+        if (dlg.ShowDialog() == DialogResult.OK)
+        {
+            try { doc.Print(); }
+            catch (Exception ex)
+            { MessageBox.Show("列印失敗：" + ex.Message, "錯誤", MessageBoxButtons.OK, MessageBoxIcon.Error); }
+        }
+    }
+
+    // ============================================================
+    private static PrintDocument BuildDocument(ReportConfig cfg)
+    {
+        var doc = new PrintDocument();
+        doc.DocumentName = cfg.Title;
+        doc.DefaultPageSettings.Landscape = cfg.Type == ReportType.PayrollList ||
+                                             cfg.Type == ReportType.PayrollByRange ||
+                                             cfg.Type == ReportType.SecondDebitDetail;
+
+        int currentRow = 0;
+        int currentPage = 1;
+
+        doc.PrintPage += (_, e) =>
+        {
+            var g = e.Graphics!;
+            float pageW = e.MarginBounds.Width;
+            float pageH = e.MarginBounds.Height;
+            float left  = e.MarginBounds.Left;
+            float top   = e.MarginBounds.Top;
+            float y = top;
+
+            // 字型 (Chinese)
+            using var fontTitle = new Font("標楷體", 16, FontStyle.Bold);
+            using var fontHdr   = new Font("新細明體", 10, FontStyle.Bold);
+            using var fontBody  = new Font("新細明體", 9);
+            using var fontFoot  = new Font("新細明體", 8, FontStyle.Italic);
+            using var fontMono  = new Font("Consolas", 9);
+
+            // ==== 標題列 ====
+            string company = BkacRepository.Enterprise.CORP_NAME;
+            float titleW = g.MeasureString(cfg.Title, fontTitle).Width;
+            g.DrawString(cfg.Title, fontTitle, Brushes.Black, left + (pageW - titleW) / 2, y);
+            y += fontTitle.Height + 4;
+
+            // 副標
+            string sub = string.IsNullOrEmpty(cfg.SubTitle)
+                ? $"{company}    撥帳日期：{cfg.PayDate:yyyy/MM/dd}"
+                : cfg.SubTitle;
+            float subW = g.MeasureString(sub, fontHdr).Width;
+            g.DrawString(sub, fontHdr, Brushes.Black, left + (pageW - subW) / 2, y);
+            y += fontHdr.Height + 4;
+
+            // 列印時間
+            g.DrawString($"列印時間 {DateTime.Now:yyyy/MM/dd HH:mm:ss}    第 {currentPage} 頁",
+                         fontFoot, Brushes.Black, left, y);
+            y += fontFoot.Height + 2;
+
+            // 分隔線
+            g.DrawLine(Pens.Black, left, y, left + pageW, y); y += 4;
+
+            // ==== 內容 ====
+            switch (cfg.Type)
+            {
+                case ReportType.EmployeeMaster:
+                    DrawEmployeeMaster(g, cfg, fontHdr, fontBody, left, ref y, pageW, pageH + top, ref currentRow);
+                    break;
+                case ReportType.PayrollList:
+                case ReportType.PayrollByRange:
+                    DrawPayrollList(g, cfg, fontHdr, fontMono, left, ref y, pageW, pageH + top, ref currentRow);
+                    break;
+                case ReportType.DispatchSlip:
+                    DrawDispatchSlip(g, cfg, fontHdr, fontBody, fontMono, left, ref y, pageW, pageH + top);
+                    break;
+                case ReportType.SecondDebitDetail:
+                    DrawSecondDebit(g, cfg, fontHdr, fontMono, left, ref y, pageW, pageH + top, ref currentRow);
+                    break;
+            }
+
+            // ==== 頁尾 ====
+            float footY = top + pageH - fontFoot.Height - 4;
+            g.DrawLine(Pens.Black, left, footY - 2, left + pageW, footY - 2);
+            g.DrawString($"彰化銀行 員工薪資撥帳系統        {DateTime.Now:yyyy/MM/dd}",
+                         fontFoot, Brushes.Black, left, footY);
+
+            // 判斷是否還有下一頁
+            int totalRecords = (cfg.Type == ReportType.SecondDebitDetail
+                ? cfg.Results?.Count ?? 0
+                : cfg.Employees?.Count ?? 0);
+            e.HasMorePages = currentRow < totalRecords && cfg.Type != ReportType.DispatchSlip;
+            if (e.HasMorePages) currentPage++;
+            else { currentPage = 1; currentRow = 0; }
+        };
+
+        return doc;
+    }
+
+    // ============================================================
+    private static void DrawEmployeeMaster(Graphics g, ReportConfig cfg,
+        Font hdr, Font body, float left, ref float y, float pageW, float bottom, ref int row)
+    {
+        var list = cfg.Employees ?? BkacRepository.Employees;
+        // 欄寬 (依比例)
+        float[] cols = { 80, 100, 130, 90, 100, 60, 110 };
+        string[] heads = { "員工編號", "員工姓名", "存款帳號", "薪資金額", "身份證號", "存提", "轉帳類別" };
+        DrawHeaderRow(g, hdr, left, y, cols, heads); y += hdr.Height + 4;
+        g.DrawLine(Pens.Black, left, y, left + pageW, y); y += 2;
+
+        for (; row < list.Count && y + body.Height + 2 < bottom; row++)
+        {
+            var e = list[row];
+            string[] vals = {
+                e.EMP_NO, e.EMP_NAME, e.EMP_ACCNO, e.EMP_PAY.ToString("N0"),
+                e.EMP_PID, e.EMP_FLAG == "1" ? "1轉提" : "2轉存",
+                e.EMP_KIND + " " + e.EMP_KNAME
+            };
+            DrawDataRow(g, body, left, y, cols, vals);
+            y += body.Height + 2;
+        }
+    }
+
+    private static void DrawPayrollList(Graphics g, ReportConfig cfg,
+        Font hdr, Font mono, float left, ref float y, float pageW, float bottom, ref int row)
+    {
+        var src = cfg.Employees ?? BkacRepository.ValidForExport().ToList();
+
+        // 排序
+        IEnumerable<Bkac> q = src;
+        if (!string.IsNullOrEmpty(cfg.FromEmpNo))
+            q = q.Where(e => string.CompareOrdinal(e.EMP_NO, cfg.FromEmpNo) >= 0);
+        if (!string.IsNullOrEmpty(cfg.ToEmpNo))
+            q = q.Where(e => string.CompareOrdinal(e.EMP_NO, cfg.ToEmpNo) <= 0);
+        var list = cfg.SortBy switch
+        {
+            "員工姓名" => q.OrderBy(x => x.EMP_NAME).ToList(),
+            "帳號"     => q.OrderBy(x => x.EMP_ACCNO).ToList(),
+            _          => q.OrderBy(x => x.EMP_NO, StringComparer.Ordinal).ToList()
+        };
+
+        // 四欄薪資明細：本俸 + 加給 + 加班費 − 扣款 = 實領  (對應舊版 PayrollItem 四欄)
+        float[] cols = { 50, 70, 70, 85, 70, 70, 70, 85 };
+        string[] heads = { "序號", "員工編號", "姓名", "本俸", "加給", "加班費", "扣款", "實領" };
+        DrawHeaderRow(g, hdr, left, y, cols, heads); y += hdr.Height + 4;
+        g.DrawLine(Pens.Black, left, y, left + pageW, y); y += 2;
+
+        for (; row < list.Count && y + mono.Height + 2 < bottom - 50; row++)
+        {
+            var e = list[row];
+            string[] vals = {
+                (row + 1).ToString(),
+                e.EMP_NO, e.EMP_NAME,
+                e.BASE_SAL.ToString("N0"),
+                e.ALLOWANCE.ToString("N0"),
+                e.OVERTIME.ToString("N0"),
+                e.DEDUCTION.ToString("N0"),
+                e.EMP_PAY.ToString("N0")
+            };
+            DrawDataRow(g, mono, left, y, cols, vals);
+            y += mono.Height + 2;
+        }
+
+        // 在最後一頁顯示合計
+        if (row >= list.Count)
+        {
+            y += 5;
+            g.DrawLine(Pens.Black, left, y, left + pageW, y); y += 4;
+            g.DrawString($"━━━ 合計 ━━━     共 {list.Count} 筆     實領合計  {list.Sum(e => e.EMP_PAY):N2}",
+                hdr, Brushes.Black, left + pageW * 0.3f, y);
+            y += hdr.Height + 4;
+        }
+    }
+
+    /// <summary>
+    /// 媒體遞送單 (BK401.FRX 1:1 重建)
+    /// 原 FRX 萃取座標 (1/10000 英吋)：
+    ///   主標題           V= 3958 H=17083 W=42604  "彰化商業銀行  受託代理撥帳資料媒體遞送單"
+    ///   送件企業 (左)    V= 8333 H= 9896 + WK_DOC1
+    ///   送件日期 (右)    V= 8750 H=57292 + GETDATE
+    ///   主表格大框       V=12396 H=10000 W=56354 (高度橫跨資料類別/資料內容/媒體種類…)
+    ///   分隔水平線多條 + 中央/邊界垂直線
+    ///   左欄: 資料類別 / 資料內容 / 媒體種類 / 媒體數量 / 資料格式 / 磁片規格 / 資料筆數
+    ///   右欄: 存款總金額 / 提款總金額 / 資料核證總數 / 企業統編
+    ///   底部: 備註 + 受託人分行收件及簽章 / 委託人企業送件及簽章 兩個簽章區
+    /// </summary>
+    private static void DrawDispatchSlip(Graphics g, ReportConfig cfg,
+        Font hdr, Font body, Font mono, float left, ref float y, float pageW, float bottom)
+    {
+        var list = cfg.Employees ?? BkacRepository.ValidForExport().ToList();
+        var et = BkacRepository.Enterprise;
+
+        using var fontLbl   = new Font("標楷體", 10, FontStyle.Bold);
+        using var fontVal   = new Font("新細明體", 10);
+        using var fontNote  = new Font("新細明體", 9);
+        using var thickPen  = new Pen(Color.Black, 1.6f);
+        using var thinPen   = new Pen(Color.Black, 0.8f);
+
+        decimal totalCredit = list.Where(x => x.EMP_FLAG == "2").Sum(x => x.EMP_PAY);
+        decimal totalDebit  = list.Where(x => x.EMP_FLAG == "1").Sum(x => x.EMP_PAY);
+        int totalCount      = list.Count;
+
+        // 民國年月日字串
+        int twY  = cfg.PayDate.Year - 1911;
+        int sY   = DateTime.Now.Year - 1911;
+        string sendDate = $"{sY:D3}/{DateTime.Now.Month:D2}/{DateTime.Now.Day:D2}";
+
+        float cy = y;
+
+        // === 送件企業 / 送件日期 ===
+        g.DrawString($"送件企業：{et.CORP_NAME}", fontVal, Brushes.Black, left, cy);
+        string sendStr = $"送件日期：{sendDate}";
+        var sw = g.MeasureString(sendStr, fontVal);
+        g.DrawString(sendStr, fontVal, Brushes.Black, left + pageW - sw.Width, cy);
+        cy += fontVal.Height + 14;
+
+        // === 主表格 (對應 FRX V=12396~45833) ===
+        float boxLeft  = left + 20;
+        float boxWidth = pageW - 40;
+        float boxTop   = cy;
+        float colHdrW  = 95;                       // 左側標題欄寬度
+        float midX     = boxLeft + boxWidth * 0.55f; // 中分線 (左寬右窄)
+        float rightHdrW = 100;                     // 右側標題欄寬度
+
+        float rowH = fontVal.Height + 14;
+
+        // ---- Row 0: 資料類別 / 企業統編 ----
+        g.DrawString("資料類別", fontLbl, Brushes.Black, boxLeft + 6, cy + 4);
+        g.DrawString("(  ) 1.薪資  2.股利  3.其他", fontVal, Brushes.Black, boxLeft + colHdrW + 6, cy + 4);
+        g.DrawString("企 業 統 編", fontLbl, Brushes.Black, midX + 6, cy + 4);
+        g.DrawString(et.CORP_NO ?? "", fontVal, Brushes.Black, midX + rightHdrW + 6, cy + 4);
+        cy += rowH;
+        g.DrawLine(thinPen, boxLeft, cy, boxLeft + boxWidth, cy);
+
+        // ---- Row 1: 資料內容 (跨欄) — 預定撥帳日期 ----
+        g.DrawString("資料內容", fontLbl, Brushes.Black, boxLeft + 6, cy + 4);
+        g.DrawString($"預  定  撥  帳  日  期    {twY:D3} 年 {cfg.PayDate.Month:D2} 月 {cfg.PayDate.Day:D2} 日",
+            fontVal, Brushes.Black, boxLeft + colHdrW + 6, cy + 4);
+        cy += rowH;
+        g.DrawLine(thinPen, boxLeft, cy, boxLeft + boxWidth, cy);
+
+        // ---- Row 2: 媒體種類 / 存款總金額 ----
+        g.DrawString("媒  體 種  類", fontLbl, Brushes.Black, boxLeft + 6, cy + 4);
+        g.DrawString("(✓) A: 3.5\"      (  ) B: 5.25\"", fontVal, Brushes.Black, boxLeft + colHdrW + 6, cy + 4);
+        g.DrawString("存 款 總 金 額", fontLbl, Brushes.Black, midX + 6, cy + 4);
+        g.DrawString($"{totalCredit:N0}  元", fontVal, Brushes.Black, midX + rightHdrW + 6, cy + 4);
+        cy += rowH;
+        g.DrawLine(thinPen, boxLeft, cy, boxLeft + boxWidth, cy);
+
+        // ---- Row 3: 媒體數量 / 提款總金額 ----
+        g.DrawString("媒  體 數  量", fontLbl, Brushes.Black, boxLeft + 6, cy + 4);
+        g.DrawString("1  件   (PCCUT.TXT)", fontVal, Brushes.Black, boxLeft + colHdrW + 6, cy + 4);
+        g.DrawString("提 款 總 金 額", fontLbl, Brushes.Black, midX + 6, cy + 4);
+        g.DrawString($"{totalDebit:N0}  元", fontVal, Brushes.Black, midX + rightHdrW + 6, cy + 4);
+        cy += rowH;
+        g.DrawLine(thinPen, boxLeft, cy, boxLeft + boxWidth, cy);
+
+        // ---- Row 4: 資料格式 / 資料核證總數 ----
+        g.DrawString("資  料 格  式", fontLbl, Brushes.Black, boxLeft + 6, cy + 4);
+        g.DrawString("1. MS-DOS 磁片  3.5吋 1.44MB        2. ASCII CODE", fontVal, Brushes.Black, boxLeft + colHdrW + 6, cy + 4);
+        g.DrawString("資料核證總數", fontLbl, Brushes.Black, midX + 6, cy + 4);
+        g.DrawString($"{totalCount}  筆", fontVal, Brushes.Black, midX + rightHdrW + 6, cy + 4);
+        cy += rowH;
+        g.DrawLine(thinPen, boxLeft, cy, boxLeft + boxWidth, cy);
+
+        // ---- Row 5: 資料筆數 (跨欄) ----
+        g.DrawString("資  料 筆  數", fontLbl, Brushes.Black, boxLeft + 6, cy + 4);
+        g.DrawString($"{totalCount}  件", fontVal, Brushes.Black, boxLeft + colHdrW + 6, cy + 4);
+        cy += rowH;
+        g.DrawLine(thinPen, boxLeft, cy, boxLeft + boxWidth, cy);
+
+        // ---- Row 6: 磁片規格 (跨欄) ----
+        g.DrawString("磁  片 規  格", fontLbl, Brushes.Black, boxLeft + 6, cy + 4);
+        g.DrawString("彰銀標準格式 (PCCUT)", fontVal, Brushes.Black, boxLeft + colHdrW + 6, cy + 4);
+        cy += rowH;
+
+        // 主表格外框 + 內部垂直分隔線
+        float boxBottom = cy;
+        g.DrawRectangle(thickPen, boxLeft, boxTop, boxWidth, boxBottom - boxTop);
+        // 左標題欄垂直線
+        g.DrawLine(thinPen, boxLeft + colHdrW, boxTop, boxLeft + colHdrW, boxBottom);
+        // Row 0/Row 2/Row 3/Row 4 中央分隔(只有有右欄時)
+        // Row 0
+        g.DrawLine(thinPen, midX, boxTop, midX, boxTop + rowH);
+        g.DrawLine(thinPen, midX + rightHdrW, boxTop, midX + rightHdrW, boxTop + rowH);
+        // Row 2..4 (從 boxTop + 2*rowH 到 boxTop + 5*rowH)
+        g.DrawLine(thinPen, midX, boxTop + 2 * rowH, midX, boxTop + 5 * rowH);
+        g.DrawLine(thinPen, midX + rightHdrW, boxTop + 2 * rowH, midX + rightHdrW, boxTop + 5 * rowH);
+
+        cy += 18;
+
+        // === 備註 ===
+        g.DrawString("備    註", fontLbl, Brushes.Black, boxLeft, cy);
+        g.DrawString("1. 本單由委託企業填妥連同轉帳資料媒體、付款憑證送交受託分行。",
+            fontNote, Brushes.Black, boxLeft + 70, cy);
+        cy += fontNote.Height + 4;
+        g.DrawString("2. 採郵遞方式處理時，受理分行核章後，將付款憑證留存，遞送單與資料媒體轉送資料訊息室。",
+            fontNote, Brushes.Black, boxLeft + 70, cy);
+        cy += fontNote.Height + 16;
+
+        // === 雙簽章區 ===
+        float sigH      = 60;
+        float sigW      = (boxWidth - 30) / 2f;
+        var sigLeftBox  = new RectangleF(boxLeft, cy, sigW, sigH);
+        var sigRightBox = new RectangleF(boxLeft + sigW + 30, cy, sigW, sigH);
+        g.DrawRectangle(Pens.Black, sigLeftBox.X, sigLeftBox.Y, sigLeftBox.Width, sigLeftBox.Height);
+        g.DrawRectangle(Pens.Black, sigRightBox.X, sigRightBox.Y, sigRightBox.Width, sigRightBox.Height);
+        var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
+        g.DrawString("受 託 人 分 行\n收 件 及 簽 章", fontLbl, Brushes.Black, sigLeftBox, sf);
+        g.DrawString("委 託 人 企 業\n送 件 及 簽 章", fontLbl, Brushes.Black, sigRightBox, sf);
+        cy += sigH + 8;
+
+        y = cy;
+    }
+
+    private static void DrawSecondDebit(Graphics g, ReportConfig cfg,
+        Font hdr, Font mono, float left, ref float y, float pageW, float bottom, ref int row)
+    {
+        var list = (cfg.Results ?? BkacRepository.Results)
+            .Where(r => cfg.IsSuccess ? r.RESULT == "00" : r.RESULT != "00")
+            .ToList();
+
+        float[] cols = { 60, 80, 90, 130, 100, 60, 100 };
+        string[] heads = { "序號", "員工編號", "姓名", "存款帳號", "金額", "代號", "失敗原因" };
+        DrawHeaderRow(g, hdr, left, y, cols, heads); y += hdr.Height + 4;
+        g.DrawLine(Pens.Black, left, y, left + pageW, y); y += 2;
+
+        for (; row < list.Count && y + mono.Height + 2 < bottom - 30; row++)
+        {
+            var r = list[row];
+            string[] vals = {
+                (row + 1).ToString(),
+                r.EMP_NO, r.EMP_NAME, r.EMP_ACCNO,
+                r.EMP_PAY.ToString("N0"), r.RESULT, r.FAIL_DESC
+            };
+            DrawDataRow(g, mono, left, y, cols, vals);
+            y += mono.Height + 2;
+        }
+
+        if (row >= list.Count)
+        {
+            y += 5;
+            g.DrawLine(Pens.Black, left, y, left + pageW, y); y += 4;
+            g.DrawString($"━━━ 合計 ━━━     共 {list.Count} 筆     金額  {list.Sum(r => r.EMP_PAY):N2}",
+                hdr, Brushes.Black, left + pageW * 0.3f, y);
+        }
+    }
+
+    // ============================================================
+    private static void DrawHeaderRow(Graphics g, Font font, float left, float y, float[] cols, string[] vals)
+    {
+        float x = left;
+        for (int i = 0; i < cols.Length && i < vals.Length; i++)
+        {
+            g.DrawString(vals[i], font, Brushes.Black, x, y);
+            x += cols[i];
+        }
+    }
+
+    private static void DrawDataRow(Graphics g, Font font, float left, float y, float[] cols, string[] vals)
+    {
+        float x = left;
+        for (int i = 0; i < cols.Length && i < vals.Length; i++)
+        {
+            g.DrawString(vals[i] ?? "", font, Brushes.Black, x, y);
+            x += cols[i];
+        }
+    }
+}

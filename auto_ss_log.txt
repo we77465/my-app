@@ -1,0 +1,16 @@
+﻿=== START 05/17/2026 10:27:55 ===
+Launching D:\work\?垢?啣極雿?衣?\CHBApp.BK\src\CHBApp.BK\bin\Debug\net8.0-windows\CHBApp.BK.exe
+LOGIN_01
+SHOT: LOGIN_01_?餃?恍.jpg
+LOGIN_02
+SHOT: LOGIN_02_銝駁??jpg
+BK102_01
+SHOT: BK102_01_?亥岷?恍.jpg
+BK101_01
+SHOT: BK101_01_蝛箇?恍.jpg
+BK101_02
+SHOT: BK101_02_憛怨???jpg
+BK101_03
+SHOT: BK101_03_?脣???.jpg
+BK101_04
+SHOT: BK101_04_?亥岷蝯?.jpg

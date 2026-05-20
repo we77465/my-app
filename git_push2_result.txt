@@ -1,0 +1,63 @@
+﻿start
+commit msg: 新增前後比對報告（含截圖）
+target: D:\work\上傳到公司
+cwd: D:\work\上傳到公司
+removed old .git
+Initialized empty Git repository in D:/work/銝?啣??.git/
+[main (root-commit) d87f7fa] ?啣???瘥??勗?嚗?芸?嚗? 46 files changed, 1 insertion(+)
+ create mode 100644 ".~lock.CHBApp_\346\252\242\346\240\270\346\257\224\345\260\215\345\240\261\345\221\212.docx#"
+ create mode 100644 "CHBApp_\345\211\215\345\276\214\346\257\224\345\260\215\345\240\261\345\221\212.docx"
+ create mode 100644 "CHBApp_\345\212\237\350\203\275\346\223\215\344\275\234\346\270\254\350\251\246\345\240\261\345\221\212.docx"
+ create mode 100644 "CHBApp_\346\252\242\346\240\270\346\257\224\345\260\215\345\240\261\345\221\212.docx"
+ create mode 100644 "CHBApp_\346\270\254\350\251\246\345\240\261\345\221\212.docx"
+ create mode 100644 screenshots/BK000_login_new.jpg
+ create mode 100644 screenshots/BK000_login_old.jpg
+ create mode 100644 screenshots/BK001_menu_new.jpg
+ create mode 100644 screenshots/BK001_menu_old.jpg
+ create mode 100644 screenshots/BK101_employee_create_new.jpg
+ create mode 100644 screenshots/BK101_employee_create_old.jpg
+ create mode 100644 screenshots/BK102_employee_query_new.jpg
+ create mode 100644 screenshots/BK102_employee_query_old.jpg
+ create mode 100644 screenshots/BK201_salary_person_new.jpg
+ create mode 100644 screenshots/BK201_salary_person_old.jpg
+ create mode 100644 screenshots/BK202_salary_all_new.jpg
+ create mode 100644 screenshots/BK202_salary_all_old.jpg
+ create mode 100644 screenshots/BK301_print_salary_new.jpg
+ create mode 100644 screenshots/BK301_print_salary_old.jpg
+ create mode 100644 screenshots/BK302_print_data_new.jpg
+ create mode 100644 screenshots/BK302_print_data_old.jpg
+ create mode 100644 screenshots/BK401_export_disk_new.jpg
+ create mode 100644 screenshots/BK401_export_disk_old.jpg
+ create mode 100644 screenshots/BK501_import_disk_new.jpg
+ create mode 100644 screenshots/BK501_import_disk_old.jpg
+ create mode 100644 screenshots/BK601_change_pwd_new.jpg
+ create mode 100644 screenshots/BK601_change_pwd_old.jpg
+ create mode 100644 "screenshots_ops/BK101_01_\347\251\272\347\231\275\347\225\253\351\235\242.jpg"
+ create mode 100644 "screenshots_ops/BK101_02_\345\241\253\350\263\207\346\226\231.jpg"
+ create mode 100644 "screenshots_ops/BK101_03_\345\204\262\345\255\230\346\210\220\345\212\237.jpg"
+ create mode 100644 "screenshots_ops/BK101_04_\346\237\245\350\251\242\347\265\220\346\236\234.jpg"
+ create mode 100644 "screenshots_ops/BK101_05_\345\210\252\351\231\244\347\242\272\350\252\215.jpg"
+ create mode 100644 "screenshots_ops/BK101_06_\345\210\252\351\231\244\346\210\220\345\212\237.jpg"
+ create mode 100644 "screenshots_ops/BK102_01_\346\237\245\350\251\242\347\225\253\351\235\242.jpg"
+ create mode 100644 "screenshots_ops/BK102_02_\346\237\245\350\251\242\347\265\220\346\236\234.jpg"
+ create mode 100644 "screenshots_ops/BK201_01_\347\251\272\347\231\275.jpg"
+ create mode 100644 "screenshots_ops/BK201_02_\345\204\262\345\255\230\346\210\220\345\212\237.jpg"
+ create mode 100644 "screenshots_ops/BK202_01_\345\205\250\345\205\254\345\217\270.jpg"
+ create mode 100644 "screenshots_ops/BK301_01_\345\210\227\345\215\260\350\250\255\345\256\232.jpg"
+ create mode 100644 "screenshots_ops/BK301_02_\351\240\220\350\246\275.jpg"
+ create mode 100644 "screenshots_ops/BK4011_01_\345\200\213\345\210\245\347\243\201\347\211\207.jpg"
+ create mode 100644 "screenshots_ops/BK401_01_\345\205\250\351\253\224\347\243\201\347\211\207.jpg"
+ create mode 100644 "screenshots_ops/BK501_01_\344\272\214\346\254\241\350\275\211\345\270\263.jpg"
+ create mode 100644 "screenshots_ops/LOGIN_01_\347\231\273\345\205\245\347\225\253\351\235\242.jpg"
+ create mode 100644 "screenshots_ops/LOGIN_02_\344\270\273\351\201\270\345\226\256.jpg"
+ create mode 100644 "screenshots_ops/\345\257\206\347\242\274\350\256\212\346\233\264_01_\346\217\220\347\244\272.jpg"
+branch 'main' set up to track 'origin/main'.
+git.exe : To https://github.com/we77465/my-app.git
+位於 D:\work\do_git_push2.ps1:36 字元:2
++ (& git push -u origin main --force 2>&1) | Out-File -FilePath $logPat ...
++  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (To https://github.com/we77465/my-app.git:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+ + 0b4c85c...d87f7fa main -> main (forced update)
+DONE

@@ -1,0 +1,75 @@
+using System.Text;
+using CHBApp.BK.Models;
+
+namespace CHBApp.BK.Services;
+
+/// <summary>
+/// 彰銀薪資磁片撥帳格式 (PCCUT.TXT) 產生器。
+/// 規格依原系統「員工薪資 PCCUT 薪資證券規格說明」文件。
+/// 舊規格 / 新規格(120 Bytes) / 百年規格(130 Bytes) 皆支援。
+/// </summary>
+public static class PccutExporter
+{
+    public enum Format { Old, New120, Bnyr130 }
+
+    public static string Export(IEnumerable<Bkac> employees, Etpms etpms,
+        DateTime payDate, Format format)
+    {
+        var sb = new StringBuilder();
+        foreach (var e in employees)
+        {
+            sb.AppendLine(format switch
+            {
+                Format.Old     => BuildOld(e, etpms, payDate),
+                Format.New120  => BuildNew120(e, etpms, payDate),
+                Format.Bnyr130 => BuildBnyr130(e, etpms, payDate),
+                _ => throw new ArgumentOutOfRangeException()
+            });
+        }
+        return sb.ToString();
+    }
+
+    private static string BuildOld(Bkac e, Etpms et, DateTime d) =>
+        string.Concat(
+            et.CORP_BRANCH.PadRight(4, ' '),
+            e.EMP_ACCNO.PadRight(14, '0'),
+            ((long)Math.Round(e.EMP_PAY * 100m)).ToString().PadLeft(13, '0'),
+            d.ToString("yyMMdd"),
+            e.EMP_FLAG,
+            e.EMP_KIND,
+            e.EMP_NO.PadRight(10, ' '),
+            e.EMP_NAME.PadRight(20, ' ')).PadRight(80);
+
+    private static string BuildNew120(Bkac e, Etpms et, DateTime d) =>
+        string.Concat(
+            et.CORP_BRANCH.PadRight(4, ' '),
+            et.CORP_ACCNO.PadRight(14, '0'),
+            e.EMP_ACCNO.PadRight(14, '0'),
+            ((long)Math.Round(e.EMP_PAY * 100m)).ToString().PadLeft(13, '0'),
+            d.ToString("yyyyMMdd"),
+            e.EMP_FLAG,
+            e.EMP_KIND,
+            e.EMP_PID.PadRight(10, ' '),
+            e.EMP_NO.PadRight(10, ' '),
+            e.EMP_NAME.PadRight(20, ' '),
+            et.CORP_NO.PadRight(8, ' '))
+        .PadRight(120);
+
+    private static string BuildBnyr130(Bkac e, Etpms et, DateTime d) =>
+        string.Concat(
+            et.CORP_BRANCH.PadRight(4, ' '),
+            et.CORP_ACCNO.PadRight(14, '0'),
+            e.EMP_ACCNO.PadRight(14, '0'),
+            ((long)Math.Round(e.EMP_PAY * 100m)).ToString().PadLeft(13, '0'),
+            d.ToString("yyyyMMdd"),
+            e.EMP_FLAG,
+            e.EMP_FLAG1,
+            e.EMP_KIND,
+            e.EMP_PID.PadRight(10, ' '),
+            e.EMP_NO.PadRight(10, ' '),
+            e.EMP_NAME.PadRight(20, ' '),
+            e.MORF,
+            et.CORP_NO.PadRight(8, ' '),
+            e.MAILADD.PadRight(15, ' '))
+        .PadRight(130);
+}

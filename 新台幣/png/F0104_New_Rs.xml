@@ -1,0 +1,55 @@
+<?xml version="1.0"?>
+<IFX xmlns="http://www.ifxforum.org" xmlns:ds="http://www.w3.org/2000/09/xmldsig#" xmlns:tw.org.ba="http://www.ba.org.tw" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.ifxforum.org http://www.ba.org.tw/FXML/IFX130-TW12-URI.xsd">
+	<EAIHeader>
+		<TxnID>F0104</TxnID>
+		<ErrCode>0</ErrCode>
+		<!-- 0表示系統面正常，不為0表示有系統面錯誤 -->
+		<RecID>rcvFromHost</RecID>
+		<SrcSystemID>PB</SrcSystemID>
+		<DomID>XML</DomID>
+	</EAIHeader>
+	<LogTxn>
+		<PmtID>前端交易序號</PmtID>
+		<!--PmtID(YYYYMMDDXX999999) = YYYYMMDD+系統XX+流水號999999。(PmtID為前端系統送電文進EAI時使用)-->
+	</LogTxn>
+	<EAIBody>
+		<MsgRs>
+			<Header>
+				<TxnId>F0104</TxnId>
+				<RspCode>回應代號</RspCode>
+				<Desc/>
+			</Header>
+			<SvcRs>
+				<BRNO>輸入行,9(4)</BRNO>
+				<TRMSEQ>櫃檯機編號,9(4)</TRMSEQ>
+				<TXTNO>交易序號,9(8)</TXTNO>
+				<CIFKEY>統一編號, X(10)</CIFKEY>
+				<CIFERR>統一編號錯誤代碼, X(01)</CIFERR>
+				<NODATA>無資料顯示欄位,X(22)</NODATA>
+				<CNAME>戶名, X(80)</CNAME>
+				<ACTYP>FATCA身份別,X(04)</ACTYP>
+				<AC2TYP>稅籍身分代碼,X(04)</AC2TYP>				
+				<Detail>
+					<ACTNO>帳號, 9(16)</ACTNO>
+					<CURCD>幣別, 9(02)</CURCD>
+					<BAL>帳面餘額, (S9(11)V(99))</BAL>
+					<OPDAY>開戶日期, (YYYY-MM-DD)</OPDAY>
+					<CLSDAY>結清日期,(YYYY-MM-DD)</CLSDAY>
+					<CHARCD>帳戶性質一, 9(03)</CHARCD>
+					<CHARCD2>帳戶性質二, 9(03)</CHARCD2>
+					<STATUS>狀態, X(01)</STATUS>
+					<UXFLG>多幣別記號,若為1請連動至U類,9(01)</UXFLG>
+					<NAME>名地/歸戶戶名,X(80)</NAME>
+					<SBRNO>分行裁撤掛帳行,9(04)</SBRNO>
+					<RBRNO>實績行,9(04)</RBRNO>
+					<EXSDAY>放款展期日,9(08)</EXSDAY>
+					<HOLDFG>保管專戶記號,9(01)</HOLDFG>
+					<KPFG>小管家記號,9(01)</KPFG>
+					<JOINTLY>聯名戶記號 0-否1-是,9(01)</JOINTLY>
+					<AXCD>轉存記號,9(01)</AXCD>
+					<CAREFG>久未往來記號0-否 1-是,9(01)</CAREFG>
+				</Detail>
+			</SvcRs>
+		</MsgRs>
+	</EAIBody>
+</IFX>

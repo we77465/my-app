@@ -1,0 +1,91 @@
+using System.Windows.Forms;
+using CHBApp.BK.Common;
+using CHBApp.BK.Models;
+using CHBApp.BK.Services;
+
+namespace CHBApp.BK.Forms;
+
+/// <summary>BK109 薪資輸入-帳號 (依存款帳號查詢)</summary>
+public partial class BK109 : CrudFormBase
+{
+    private int _idx = -1;
+
+    public BK109()
+    {
+        InitializeComponent();
+        BtnSave = btnSave; BtnCancel = btnCancel;
+        BtnFirst = btnFirst; BtnPrev = btnPrev; BtnNext = btnNext; BtnLast = btnLast;
+        BtnPreview = btnPreview; BtnPrint = btnPrint; BtnExit = btnExit;
+        cbFlag.Items.AddRange(new object[] { "1 - 轉提", "2 - 轉存" });
+        cbKind.DisplayMember = nameof(PayKind.KIND_NAME);
+        cbKind.DataSource = new BindingSource(BkacRepository.PayKinds, null);
+        txtKey.Leave += (_, _) => DoSearch();
+    }
+
+    private Bkac? Cur => (_idx >= 0 && _idx < BkacRepository.Employees.Count) ? BkacRepository.Employees[_idx] : null;
+
+    private void BindAt(int idx)
+    {
+        if (idx < 0 || idx >= BkacRepository.Employees.Count) return;
+        _idx = idx;
+        var e = BkacRepository.Employees[idx];
+        txtKey.Text = e.EMP_ACCNO;
+        lblEmpNoVal.Text = e.EMP_NO;
+        lblName.Text = e.EMP_NAME;
+        numPay.Value = (decimal)Math.Min((double)e.EMP_PAY, (double)numPay.Maximum);
+        cbFlag.SelectedIndex = e.EMP_FLAG == "1" ? 0 : 1;
+        var pk = BkacRepository.PayKinds.FirstOrDefault(k => k.KIND_CODE == e.EMP_KIND);
+        cbKind.SelectedItem = pk ?? BkacRepository.PayKinds[1];
+        rbCheckYes.Checked = e.EMP_FLAG1 == "Y"; rbCheckNo.Checked = e.EMP_FLAG1 != "Y";
+        txtMail.Text = e.MAILADD; txtContent.Text = e.CONTENT;
+        txtCustomKind.Text = e.EMP_KIND == "97" ? e.EMP_KNAME : "";
+        UpdateCustomKindVisibility();
+        lblPos.Text = $"第 {_idx + 1} / {BkacRepository.Employees.Count} 筆";
+    }
+
+    private void UpdateCustomKindVisibility()
+    {
+        bool is97 = (cbKind.SelectedItem as PayKind)?.KIND_CODE == "97";
+        lblCustomKind.Visible = is97; txtCustomKind.Visible = is97;
+    }
+
+    private void txtKey_KeyDown(object s, KeyEventArgs e)
+    {
+        if (e.KeyCode != Keys.Enter) return;
+        e.SuppressKeyPress = true;
+        DoSearch();
+    }
+
+    private void DoSearch()
+    {
+        var acc = txtKey.Text.Trim();
+        if (string.IsNullOrEmpty(acc)) return;
+        if (Cur != null && Cur.EMP_ACCNO == acc) return;
+        var idx = BkacRepository.Employees.FindIndex(x => x.EMP_ACCNO == acc);
+        if (idx < 0) MessageBox.Show("找不到該帳號", "注意");
+        else BindAt(idx);
+    }
+
+    private void btnSave_Click(object s, EventArgs e)
+    {
+        if (Cur is not Bkac cur) { MessageBox.Show("請先輸入帳號查詢"); return; }
+        cur.BASE_SAL = numPay.Value; cur.ALLOWANCE = 0; cur.OVERTIME = 0; cur.DEDUCTION = 0;
+        cur.EMP_FLAG = (cbFlag.SelectedItem?.ToString() ?? "2").Substring(0, 1);
+        var pk = cbKind.SelectedItem as PayKind;
+        cur.EMP_KIND = pk?.KIND_CODE ?? "51";
+        cur.EMP_KNAME = pk?.KIND_CODE == "97" ? txtCustomKind.Text.Trim() : (pk?.KIND_NAME ?? "薪資");
+        cur.EMP_FLAG1 = rbCheckYes.Checked ? "Y" : "N";
+        cur.MAILADD = txtMail.Text.Trim(); cur.CONTENT = txtContent.Text.Trim();
+        MessageBox.Show($"已儲存 {cur.EMP_NAME} 之資料", "訊息");
+    }
+    private void btnCancel_Click(object s, EventArgs e) { if (Cur != null) BindAt(_idx); }
+    private void btnFirst_Click(object s, EventArgs e) => BindAt(0);
+    private void btnPrev_Click(object s, EventArgs e) { if (_idx > 0) BindAt(_idx - 1); else MessageBox.Show("已是第一筆"); }
+    private void btnNext_Click(object s, EventArgs e) { if (_idx < BkacRepository.Employees.Count - 1) BindAt(_idx + 1); else MessageBox.Show("已是最後一筆"); }
+    private void btnLast_Click(object s, EventArgs e) => BindAt(BkacRepository.Employees.Count - 1);
+    private BkReportPrinter.ReportConfig MakeCfg() => new() { Type = BkReportPrinter.ReportType.PayrollList, Title = "本月薪資清冊 - 個人", Employees = Cur != null ? new List<Bkac> { Cur } : new() };
+    private void btnPreview_Click(object s, EventArgs e) => BkReportPrinter.ShowPreview(MakeCfg());
+    private void btnPrint_Click(object s, EventArgs e) => BkReportPrinter.Print(MakeCfg());
+    private void btnExit_Click(object s, EventArgs e) => Close();
+    private void cbKind_SelectedIndexChanged(object s, EventArgs e) => UpdateCustomKindVisibility();
+}

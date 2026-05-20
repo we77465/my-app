@@ -1,0 +1,15 @@
+using CHBApp.BK.Common;
+using CHBApp.BK.Services;
+
+namespace CHBApp.BK.Forms;
+
+/// <summary>BK4012 轉換磁片作業(彰銀e通格式) - SCT 12 元件 (沒有 預覽列印 個別/彰銀規格)</summary>
+public partial class BK4012 : ExportFormBase
+{
+    public BK4012()
+    {
+        InitializeComponent();
+        btnOk.Click += (_, _) =>
+            DoExport(BkacRepository.ValidForExport(), PccutExporter.Format.New120);
+    }
+}

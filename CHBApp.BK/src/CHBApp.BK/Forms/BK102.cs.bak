@@ -1,0 +1,69 @@
+using System.Windows.Forms;
+using CHBApp.BK.Common;
+using CHBApp.BK.Models;
+using CHBApp.BK.Services;
+
+namespace CHBApp.BK.Forms;
+
+/// <summary>BK102 薪資輸入－全公司 (使用完整 18 項轉帳類別)</summary>
+public partial class BK102 : CrudFormBase
+{
+    public BK102()
+    {
+        InitializeComponent();
+        BtnSave = btnSave; BtnCancel = btnCancel;
+        BtnPreview = btnPreview; BtnPrint = btnPrint; BtnExit = btnExit;
+
+        cbFlag.Items.AddRange(new object[] { "1 - 轉提", "2 - 轉存" });
+        cbFlag.SelectedIndex = 1;
+
+        // 完整 18 項 PayKinds
+        cbKind.DisplayMember = nameof(PayKind.KIND_NAME);
+        cbKind.DataSource = new BindingSource(BkacRepository.PayKinds, null);
+        cbKind.SelectedIndex = 1;   // 預設 51 薪資
+        cbKind.SelectedIndexChanged += cbKind_SelectedIndexChanged;
+
+        rbCheckYes.Checked = true;
+    }
+
+    private void cbKind_SelectedIndexChanged(object s, EventArgs e)
+    {
+        bool is97 = (cbKind.SelectedItem as PayKind)?.KIND_CODE == "97";
+        lblCustomKind.Visible = is97;
+        txtCustomKind.Visible = is97;
+    }
+
+    private BkReportPrinter.ReportConfig MakeCfg() => new()
+    {
+        Type = BkReportPrinter.ReportType.PayrollList,
+        Title = "本月薪資清冊 - 全公司",
+        Employees = BkacRepository.ValidForExport().ToList()
+    };
+
+    private void btnSave_Click(object s, EventArgs e)
+    {
+        var pay = numPay.Value;
+        var flag = (cbFlag.SelectedItem?.ToString() ?? "2").Substring(0, 1);
+        var pk = cbKind.SelectedItem as PayKind;
+        var kind = pk?.KIND_CODE ?? "51";
+        var kname = pk?.KIND_CODE == "97" ? txtCustomKind.Text.Trim() : (pk?.KIND_NAME ?? "薪資");
+        var flag1 = rbCheckYes.Checked ? "Y" : "N";
+
+        foreach (var emp in BkacRepository.Employees)
+        {
+            if (pay > 0) emp.EMP_PAY = pay;
+            emp.EMP_FLAG  = flag;
+            emp.EMP_KIND  = kind;
+            emp.EMP_KNAME = kname;
+            emp.EMP_FLAG1 = flag1;
+            emp.MAILADD   = txtMail.Text.Trim();
+            emp.CONTENT   = txtContent.Text.Trim();
+        }
+        if (pay == 0) MessageBox.Show("若輸入 0 則為清除薪資。", "注意");
+        MessageBox.Show("本月薪資輸入完成。", "訊息");
+    }
+    private void btnCancel_Click(object s, EventArgs e) => Close();
+    private void btnPreview_Click(object s, EventArgs e) => BkReportPrinter.ShowPreview(MakeCfg());
+    private void btnPrint_Click(object s, EventArgs e)   => BkReportPrinter.Print(MakeCfg());
+    private void btnExit_Click(object s, EventArgs e)    => Close();
+}

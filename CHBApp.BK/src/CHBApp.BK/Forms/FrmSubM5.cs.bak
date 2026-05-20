@@ -1,0 +1,71 @@
+using System.Windows.Forms;
+
+namespace CHBApp.BK.Forms;
+
+/// <summary>FRMSUB_M5 - 員工薪資撥帳系統 主視窗 (含 8 大頂層選單)</summary>
+public partial class FrmSubM5 : Form
+{
+    public FrmSubM5() => InitializeComponent();
+
+    private void Open(Form f)
+    {
+        f.MdiParent = this;
+        f.Show();
+        f.Activate();
+    }
+
+    // === 員工資料作業 ===
+    private void miEmpReg_Click(object s, EventArgs e)    => Open(new BK101());
+    private void miEmpQuery_Click(object s, EventArgs e)  => Open(new BK201());
+    private void miEmpImport_Click(object s, EventArgs e) => Open(new BK_EmpImport());
+    private void miOtherImportXunLian_Click(object s, EventArgs e) =>
+        MessageBox.Show("(模擬) 磁片輸入(EXCEL)--訊連CO專用", "其他格式讀入");
+
+    // === 薪資輸入 ===
+    private void miSalAll_Click(object s, EventArgs e)        => Open(new BK102());
+    private void miSalIndividual_Click(object s, EventArgs e) => Open(new BK103());
+    private void miSalClear_Click(object s, EventArgs e)      => Open(new BK104());
+    private void miSalByCode_Click(object s, EventArgs e)     => Open(new BK105());
+    private void miSalByName_Click(object s, EventArgs e)     => Open(new BK106());
+    private void miSalByAccount_Click(object s, EventArgs e)  => Open(new BK109());
+    private void miSalUnreg_Click(object s, EventArgs e)      => Open(new BK108());
+    private void miSalBatch_Click(object s, EventArgs e)      => Open(new BK110());
+    private void miSalImport_Click(object s, EventArgs e)     => Open(new BK107());
+    private void miSalReimport_Click(object s, EventArgs e)   => Open(new BK111());
+
+    // === 列印作業 ===
+    private void miPrint1_Click(object s, EventArgs e)   => Open(new BK301());
+    private void miPrint2_Click(object s, EventArgs e)   => Open(new BK302());
+    private void miPrintHub_Click(object s, EventArgs e) => Open(new BK202());
+
+    // === 轉換磁片作業 ===
+    private void miExportAll_Click(object s, EventArgs e)        => Open(new BK401());
+    private void miExportIndividual_Click(object s, EventArgs e) => Open(new BK4011());
+    private void miExportGroup_Click(object s, EventArgs e)      => Open(new BK402());
+    private void miExportForeignI_Click(object s, EventArgs e)   => Open(new BK403());
+    private void miMidLink_Click(object s, EventArgs e)          => Open(new BK404());
+    private void miExportAllNew_Click(object s, EventArgs e)     => Open(new BK405());
+    private void miExportIndNew_Click(object s, EventArgs e)     => Open(new BK406());
+    private void miExportForeignNew_Click(object s, EventArgs e) => Open(new BK407());
+    private void miExportGroupNew_Click(object s, EventArgs e)   => Open(new BK408());
+
+    // === 二次轉扣帳作業 ===
+    private void miSecImport_Click(object s, EventArgs e)  => Open(new BK501());
+    private void miSecFail_Click(object s, EventArgs e)    => Open(new BK502());
+    private void miSecOk_Click(object s, EventArgs e)      => Open(new BK503());
+    private void miSecExpOld_Click(object s, EventArgs e)  => Open(new BK504());
+    private void miSecExpNew_Click(object s, EventArgs e)  => Open(new BK505());
+
+    // === 密碼 / 系統維護 / 說明 ===
+    private void miPassword_Click(object s, EventArgs e) =>
+        MessageBox.Show("(模擬) 密碼變更", "提示");
+    private void miMaintain_Click(object s, EventArgs e) =>
+        MessageBox.Show("(模擬) 系統維護", "提示");
+    private void miHelp_Click(object s, EventArgs e) =>
+        MessageBox.Show(
+            "員工薪資撥帳系統\n版本 1.0  © 2026\n\n" +
+            "F2 新增  F3 修改  F4 刪除  F5 儲存\n" +
+            "F6 查詢  F7 執行   ESC 取消\n",
+            "輔助說明");
+    private void miExit_Click(object s, EventArgs e) => Close();
+}

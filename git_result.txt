@@ -1,0 +1,444 @@
+﻿start
+folder name: 遠端到工作電腦的
+target path: D:\work\遠端到工作電腦的\CHBApp.BK
+C:\Program Files\Git\cmd\git.exe
+current dir: D:\work\遠端到工作電腦的\CHBApp.BK
+removed old .git
+Initialized empty Git repository in D:/work/?垢?啣極雿?衣?/CHBApp.BK/.git/
+git.exe : warning: in the working copy of 'CHBApp.BK.sln', LF will be replaced by CRLF the next time Git touches it
+位於 D:\work\do_git.ps1:30 字元:2
++ (& git add . 2>&1) | Out-File -FilePath $logPath -Append -Encoding ut ...
++  ~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (warning: in the... Git touches it:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+warning: in the working copy of 'git_debug.bat', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'git_init.bat', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'git_init2.bat', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/CHBApp.BK/CHBApp.BK.csproj', LF will be replaced by CRLF the next time Git touches
+ it
+warning: in the working copy of 'src/CHBApp.BK/Common/CrudFormBase.cs', LF will be replaced by CRLF the next time Git t
+ouches it
+warning: in the working copy of 'src/CHBApp.BK/Common/ExportFormBase.cs', LF will be replaced by CRLF the next time Git
+ touches it
+warning: in the working copy of 'src/CHBApp.BK/Common/ResxBlank.txt', LF will be replaced by CRLF the next time Git tou
+ches it
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK101.Designer.cs', LF will be replaced by CRLF the next time Git 
+touches it
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK101.cs', LF will be replaced by CRLF the next time Git touches i
+t
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK101.resx', LF will be replaced by CRLF the next time Git touches
+ it
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK102.Designer.cs', LF will be replaced by CRLF the next time Git 
+touches it
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK102.cs', LF will be replaced by CRLF the next time Git touches i
+t
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK102.resx', LF will be replaced by CRLF the next time Git touches
+ it
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK103.Designer.cs', LF will be replaced by CRLF the next time Git 
+touches it
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK103.cs', LF will be replaced by CRLF the next time Git touches i
+t
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK103.resx', LF will be replaced by CRLF the next time Git touches
+ it
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK104.Designer.cs', LF will be replaced by CRLF the next time Git 
+touches it
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK104.cs', LF will be replaced by CRLF the next time Git touches i
+t
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK104.resx', LF will be replaced by CRLF the next time Git touches
+ it
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK105.Designer.cs', LF will be replaced by CRLF the next time Git 
+touches it
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK105.cs', LF will be replaced by CRLF the next time Git touches i
+t
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK105.resx', LF will be replaced by CRLF the next time Git touches
+ it
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK106.Designer.cs', LF will be replaced by CRLF the next time Git 
+touches it
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK106.cs', LF will be replaced by CRLF the next time Git touches i
+t
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK106.resx', LF will be replaced by CRLF the next time Git touches
+ it
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK107.Designer.cs', LF will be replaced by CRLF the next time Git 
+touches it
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK107.cs', LF will be replaced by CRLF the next time Git touches i
+t
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK107.resx', LF will be replaced by CRLF the next time Git touches
+ it
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK108.Designer.cs', LF will be replaced by CRLF the next time Git 
+touches it
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK108.cs', LF will be replaced by CRLF the next time Git touches i
+t
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK108.resx', LF will be replaced by CRLF the next time Git touches
+ it
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK109.Designer.cs', LF will be replaced by CRLF the next time Git 
+touches it
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK109.cs', LF will be replaced by CRLF the next time Git touches i
+t
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK109.resx', LF will be replaced by CRLF the next time Git touches
+ it
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK110.Designer.cs', LF will be replaced by CRLF the next time Git 
+touches it
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK110.cs', LF will be replaced by CRLF the next time Git touches i
+t
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK110.resx', LF will be replaced by CRLF the next time Git touches
+ it
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK111.Designer.cs', LF will be replaced by CRLF the next time Git 
+touches it
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK111.cs', LF will be replaced by CRLF the next time Git touches i
+t
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK111.resx', LF will be replaced by CRLF the next time Git touches
+ it
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK201.Designer.cs', LF will be replaced by CRLF the next time Git 
+touches it
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK201.cs', LF will be replaced by CRLF the next time Git touches i
+t
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK201.resx', LF will be replaced by CRLF the next time Git touches
+ it
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK202.Designer.cs', LF will be replaced by CRLF the next time Git 
+touches it
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK202.cs', LF will be replaced by CRLF the next time Git touches i
+t
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK202.resx', LF will be replaced by CRLF the next time Git touches
+ it
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK301.Designer.cs', LF will be replaced by CRLF the next time Git 
+touches it
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK301.cs', LF will be replaced by CRLF the next time Git touches i
+t
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK301.resx', LF will be replaced by CRLF the next time Git touches
+ it
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK302.Designer.cs', LF will be replaced by CRLF the next time Git 
+touches it
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK302.cs', LF will be replaced by CRLF the next time Git touches i
+t
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK302.resx', LF will be replaced by CRLF the next time Git touches
+ it
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK401.Designer.cs', LF will be replaced by CRLF the next time Git 
+touches it
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK401.cs', LF will be replaced by CRLF the next time Git touches i
+t
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK401.resx', LF will be replaced by CRLF the next time Git touches
+ it
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK4011.Designer.cs', LF will be replaced by CRLF the next time Git
+ touches it
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK4011.cs', LF will be replaced by CRLF the next time Git touches 
+it
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK4011.resx', LF will be replaced by CRLF the next time Git touche
+s it
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK4012.Designer.cs', LF will be replaced by CRLF the next time Git
+ touches it
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK4012.cs', LF will be replaced by CRLF the next time Git touches 
+it
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK4012.resx', LF will be replaced by CRLF the next time Git touche
+s it
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK402.Designer.cs', LF will be replaced by CRLF the next time Git 
+touches it
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK402.cs', LF will be replaced by CRLF the next time Git touches i
+t
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK402.resx', LF will be replaced by CRLF the next time Git touches
+ it
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK403.Designer.cs', LF will be replaced by CRLF the next time Git 
+touches it
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK403.cs', LF will be replaced by CRLF the next time Git touches i
+t
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK403.resx', LF will be replaced by CRLF the next time Git touches
+ it
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK404.Designer.cs', LF will be replaced by CRLF the next time Git 
+touches it
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK404.cs', LF will be replaced by CRLF the next time Git touches i
+t
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK404.resx', LF will be replaced by CRLF the next time Git touches
+ it
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK405.Designer.cs', LF will be replaced by CRLF the next time Git 
+touches it
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK405.cs', LF will be replaced by CRLF the next time Git touches i
+t
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK405.resx', LF will be replaced by CRLF the next time Git touches
+ it
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK406.Designer.cs', LF will be replaced by CRLF the next time Git 
+touches it
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK406.cs', LF will be replaced by CRLF the next time Git touches i
+t
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK406.resx', LF will be replaced by CRLF the next time Git touches
+ it
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK407.Designer.cs', LF will be replaced by CRLF the next time Git 
+touches it
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK407.cs', LF will be replaced by CRLF the next time Git touches i
+t
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK407.resx', LF will be replaced by CRLF the next time Git touches
+ it
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK408.Designer.cs', LF will be replaced by CRLF the next time Git 
+touches it
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK408.cs', LF will be replaced by CRLF the next time Git touches i
+t
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK408.resx', LF will be replaced by CRLF the next time Git touches
+ it
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK501.Designer.cs', LF will be replaced by CRLF the next time Git 
+touches it
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK501.cs', LF will be replaced by CRLF the next time Git touches i
+t
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK501.resx', LF will be replaced by CRLF the next time Git touches
+ it
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK502.Designer.cs', LF will be replaced by CRLF the next time Git 
+touches it
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK502.cs', LF will be replaced by CRLF the next time Git touches i
+t
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK502.resx', LF will be replaced by CRLF the next time Git touches
+ it
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK503.Designer.cs', LF will be replaced by CRLF the next time Git 
+touches it
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK503.cs', LF will be replaced by CRLF the next time Git touches i
+t
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK503.resx', LF will be replaced by CRLF the next time Git touches
+ it
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK504.Designer.cs', LF will be replaced by CRLF the next time Git 
+touches it
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK504.cs', LF will be replaced by CRLF the next time Git touches i
+t
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK504.resx', LF will be replaced by CRLF the next time Git touches
+ it
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK505.Designer.cs', LF will be replaced by CRLF the next time Git 
+touches it
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK505.cs', LF will be replaced by CRLF the next time Git touches i
+t
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK505.resx', LF will be replaced by CRLF the next time Git touches
+ it
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK_EmpImport.Designer.cs', LF will be replaced by CRLF the next ti
+me Git touches it
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK_EmpImport.cs', LF will be replaced by CRLF the next time Git to
+uches it
+warning: in the working copy of 'src/CHBApp.BK/Forms/BK_EmpImport.resx', LF will be replaced by CRLF the next time Git 
+touches it
+warning: in the working copy of 'src/CHBApp.BK/Forms/FrmLogin.Designer.cs', LF will be replaced by CRLF the next time G
+it touches it
+warning: in the working copy of 'src/CHBApp.BK/Forms/FrmLogin.cs', LF will be replaced by CRLF the next time Git touche
+s it
+warning: in the working copy of 'src/CHBApp.BK/Forms/FrmLogin.resx', LF will be replaced by CRLF the next time Git touc
+hes it
+warning: in the working copy of 'src/CHBApp.BK/Forms/FrmSubM5.Designer.cs', LF will be replaced by CRLF the next time G
+it touches it
+warning: in the working copy of 'src/CHBApp.BK/Forms/FrmSubM5.cs', LF will be replaced by CRLF the next time Git touche
+s it
+warning: in the working copy of 'src/CHBApp.BK/Forms/FrmSubM5.resx', LF will be replaced by CRLF the next time Git touc
+hes it
+warning: in the working copy of 'src/CHBApp.BK/Models/AppUser.cs', LF will be replaced by CRLF the next time Git touche
+s it
+warning: in the working copy of 'src/CHBApp.BK/Models/Bkac.cs', LF will be replaced by CRLF the next time Git touches i
+t
+warning: in the working copy of 'src/CHBApp.BK/Models/BkacResult.cs', LF will be replaced by CRLF the next time Git tou
+ches it
+warning: in the working copy of 'src/CHBApp.BK/Models/Etpms.cs', LF will be replaced by CRLF the next time Git touches 
+it
+warning: in the working copy of 'src/CHBApp.BK/Models/PayKind.cs', LF will be replaced by CRLF the next time Git touche
+s it
+warning: in the working copy of 'src/CHBApp.BK/Program.cs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/CHBApp.BK/Services/BkReportPrinter.cs', LF will be replaced by CRLF the next time 
+Git touches it
+warning: in the working copy of 'src/CHBApp.BK/Services/BkacRepository.cs', LF will be replaced by CRLF the next time G
+it touches it
+warning: in the working copy of 'src/CHBApp.BK/Services/PccutExporter.cs', LF will be replaced by CRLF the next time Gi
+t touches it
+[main (root-commit) b4a3a1d] first commit
+ 192 files changed, 5871 insertions(+)
+ create mode 100644 .vs/CHBApp.BK/DesignTimeBuild/.dtbcache.v2
+ create mode 100644 .vs/CHBApp.BK/FileContentIndex/03c77da9-b173-49c8-b241-c26c98b62b54.vsidx
+ create mode 100644 .vs/CHBApp.BK/FileContentIndex/784e0010-5878-48e7-9028-2f278e082aa7.vsidx
+ create mode 100644 .vs/CHBApp.BK/FileContentIndex/9971b781-91b6-4469-8656-1a429517dcab.vsidx
+ create mode 100644 .vs/CHBApp.BK/FileContentIndex/d6126417-7091-47f5-a02a-75cb1fc6e990.vsidx
+ create mode 100644 .vs/CHBApp.BK/FileContentIndex/f1ee00e4-98c6-4f78-83e0-7dd8c310852b.vsidx
+ create mode 100644 .vs/CHBApp.BK/v17/.futdcache.v2
+ create mode 100644 .vs/CHBApp.BK/v17/.suo
+ create mode 100644 .vs/ProjectEvaluation/chbapp.bk.metadata.v7.bin
+ create mode 100644 .vs/ProjectEvaluation/chbapp.bk.projects.v7.bin
+ create mode 100644 CHBApp.BK.sln
+ create mode 100644 git_debug.bat
+ create mode 100644 git_init.bat
+ create mode 100644 git_init2.bat
+ create mode 100644 src/CHBApp.BK/CHBApp.BK.csproj
+ create mode 100644 src/CHBApp.BK/CHBApp.BK.csproj.user
+ create mode 100644 src/CHBApp.BK/Common/CrudFormBase.cs
+ create mode 100644 src/CHBApp.BK/Common/CrudFormBase.resx
+ create mode 100644 src/CHBApp.BK/Common/ExportFormBase.cs
+ create mode 100644 src/CHBApp.BK/Common/ExportFormBase.resx
+ create mode 100644 src/CHBApp.BK/Common/ResxBlank.txt
+ create mode 100644 src/CHBApp.BK/Forms/BK101.Designer.cs
+ create mode 100644 src/CHBApp.BK/Forms/BK101.cs
+ create mode 100644 src/CHBApp.BK/Forms/BK101.resx
+ create mode 100644 src/CHBApp.BK/Forms/BK102.Designer.cs
+ create mode 100644 src/CHBApp.BK/Forms/BK102.cs
+ create mode 100644 src/CHBApp.BK/Forms/BK102.resx
+ create mode 100644 src/CHBApp.BK/Forms/BK103.Designer.cs
+ create mode 100644 src/CHBApp.BK/Forms/BK103.cs
+ create mode 100644 src/CHBApp.BK/Forms/BK103.resx
+ create mode 100644 src/CHBApp.BK/Forms/BK104.Designer.cs
+ create mode 100644 src/CHBApp.BK/Forms/BK104.cs
+ create mode 100644 src/CHBApp.BK/Forms/BK104.resx
+ create mode 100644 src/CHBApp.BK/Forms/BK105.Designer.cs
+ create mode 100644 src/CHBApp.BK/Forms/BK105.cs
+ create mode 100644 src/CHBApp.BK/Forms/BK105.resx
+ create mode 100644 src/CHBApp.BK/Forms/BK106.Designer.cs
+ create mode 100644 src/CHBApp.BK/Forms/BK106.cs
+ create mode 100644 src/CHBApp.BK/Forms/BK106.resx
+ create mode 100644 src/CHBApp.BK/Forms/BK107.Designer.cs
+ create mode 100644 src/CHBApp.BK/Forms/BK107.cs
+ create mode 100644 src/CHBApp.BK/Forms/BK107.resx
+ create mode 100644 src/CHBApp.BK/Forms/BK108.Designer.cs
+ create mode 100644 src/CHBApp.BK/Forms/BK108.cs
+ create mode 100644 src/CHBApp.BK/Forms/BK108.resx
+ create mode 100644 src/CHBApp.BK/Forms/BK109.Designer.cs
+ create mode 100644 src/CHBApp.BK/Forms/BK109.cs
+ create mode 100644 src/CHBApp.BK/Forms/BK109.resx
+ create mode 100644 src/CHBApp.BK/Forms/BK110.Designer.cs
+ create mode 100644 src/CHBApp.BK/Forms/BK110.cs
+ create mode 100644 src/CHBApp.BK/Forms/BK110.resx
+ create mode 100644 src/CHBApp.BK/Forms/BK111.Designer.cs
+ create mode 100644 src/CHBApp.BK/Forms/BK111.cs
+ create mode 100644 src/CHBApp.BK/Forms/BK111.resx
+ create mode 100644 src/CHBApp.BK/Forms/BK201.Designer.cs
+ create mode 100644 src/CHBApp.BK/Forms/BK201.cs
+ create mode 100644 src/CHBApp.BK/Forms/BK201.resx
+ create mode 100644 src/CHBApp.BK/Forms/BK202.Designer.cs
+ create mode 100644 src/CHBApp.BK/Forms/BK202.cs
+ create mode 100644 src/CHBApp.BK/Forms/BK202.resx
+ create mode 100644 src/CHBApp.BK/Forms/BK301.Designer.cs
+ create mode 100644 src/CHBApp.BK/Forms/BK301.cs
+ create mode 100644 src/CHBApp.BK/Forms/BK301.resx
+ create mode 100644 src/CHBApp.BK/Forms/BK302.Designer.cs
+ create mode 100644 src/CHBApp.BK/Forms/BK302.cs
+ create mode 100644 src/CHBApp.BK/Forms/BK302.resx
+ create mode 100644 src/CHBApp.BK/Forms/BK401.Designer.cs
+ create mode 100644 src/CHBApp.BK/Forms/BK401.cs
+ create mode 100644 src/CHBApp.BK/Forms/BK401.resx
+ create mode 100644 src/CHBApp.BK/Forms/BK4011.Designer.cs
+ create mode 100644 src/CHBApp.BK/Forms/BK4011.cs
+ create mode 100644 src/CHBApp.BK/Forms/BK4011.resx
+ create mode 100644 src/CHBApp.BK/Forms/BK4012.Designer.cs
+ create mode 100644 src/CHBApp.BK/Forms/BK4012.cs
+ create mode 100644 src/CHBApp.BK/Forms/BK4012.resx
+ create mode 100644 src/CHBApp.BK/Forms/BK402.Designer.cs
+ create mode 100644 src/CHBApp.BK/Forms/BK402.cs
+ create mode 100644 src/CHBApp.BK/Forms/BK402.resx
+ create mode 100644 src/CHBApp.BK/Forms/BK403.Designer.cs
+ create mode 100644 src/CHBApp.BK/Forms/BK403.cs
+ create mode 100644 src/CHBApp.BK/Forms/BK403.resx
+ create mode 100644 src/CHBApp.BK/Forms/BK404.Designer.cs
+ create mode 100644 src/CHBApp.BK/Forms/BK404.cs
+ create mode 100644 src/CHBApp.BK/Forms/BK404.resx
+ create mode 100644 src/CHBApp.BK/Forms/BK405.Designer.cs
+ create mode 100644 src/CHBApp.BK/Forms/BK405.cs
+ create mode 100644 src/CHBApp.BK/Forms/BK405.resx
+ create mode 100644 src/CHBApp.BK/Forms/BK406.Designer.cs
+ create mode 100644 src/CHBApp.BK/Forms/BK406.cs
+ create mode 100644 src/CHBApp.BK/Forms/BK406.resx
+ create mode 100644 src/CHBApp.BK/Forms/BK407.Designer.cs
+ create mode 100644 src/CHBApp.BK/Forms/BK407.cs
+ create mode 100644 src/CHBApp.BK/Forms/BK407.resx
+ create mode 100644 src/CHBApp.BK/Forms/BK408.Designer.cs
+ create mode 100644 src/CHBApp.BK/Forms/BK408.cs
+ create mode 100644 src/CHBApp.BK/Forms/BK408.resx
+ create mode 100644 src/CHBApp.BK/Forms/BK501.Designer.cs
+ create mode 100644 src/CHBApp.BK/Forms/BK501.cs
+ create mode 100644 src/CHBApp.BK/Forms/BK501.resx
+ create mode 100644 src/CHBApp.BK/Forms/BK502.Designer.cs
+ create mode 100644 src/CHBApp.BK/Forms/BK502.cs
+ create mode 100644 src/CHBApp.BK/Forms/BK502.resx
+ create mode 100644 src/CHBApp.BK/Forms/BK503.Designer.cs
+ create mode 100644 src/CHBApp.BK/Forms/BK503.cs
+ create mode 100644 src/CHBApp.BK/Forms/BK503.resx
+ create mode 100644 src/CHBApp.BK/Forms/BK504.Designer.cs
+ create mode 100644 src/CHBApp.BK/Forms/BK504.cs
+ create mode 100644 src/CHBApp.BK/Forms/BK504.resx
+ create mode 100644 src/CHBApp.BK/Forms/BK505.Designer.cs
+ create mode 100644 src/CHBApp.BK/Forms/BK505.cs
+ create mode 100644 src/CHBApp.BK/Forms/BK505.resx
+ create mode 100644 src/CHBApp.BK/Forms/BK_EmpImport.Designer.cs
+ create mode 100644 src/CHBApp.BK/Forms/BK_EmpImport.cs
+ create mode 100644 src/CHBApp.BK/Forms/BK_EmpImport.resx
+ create mode 100644 src/CHBApp.BK/Forms/FrmLogin.Designer.cs
+ create mode 100644 src/CHBApp.BK/Forms/FrmLogin.cs
+ create mode 100644 src/CHBApp.BK/Forms/FrmLogin.resx
+ create mode 100644 src/CHBApp.BK/Forms/FrmSubM5.Designer.cs
+ create mode 100644 src/CHBApp.BK/Forms/FrmSubM5.cs
+ create mode 100644 src/CHBApp.BK/Forms/FrmSubM5.resx
+ create mode 100644 src/CHBApp.BK/Models/AppUser.cs
+ create mode 100644 src/CHBApp.BK/Models/Bkac.cs
+ create mode 100644 src/CHBApp.BK/Models/BkacResult.cs
+ create mode 100644 src/CHBApp.BK/Models/Etpms.cs
+ create mode 100644 src/CHBApp.BK/Models/PayKind.cs
+ create mode 100644 src/CHBApp.BK/Program.cs
+ create mode 100644 src/CHBApp.BK/Services/BkReportPrinter.cs
+ create mode 100644 src/CHBApp.BK/Services/BkacRepository.cs
+ create mode 100644 src/CHBApp.BK/Services/PccutExporter.cs
+ create mode 100644 src/CHBApp.BK/bin/Debug/net8.0-windows/CHBApp.BK.deps.json
+ create mode 100644 src/CHBApp.BK/bin/Debug/net8.0-windows/CHBApp.BK.dll
+ create mode 100644 src/CHBApp.BK/bin/Debug/net8.0-windows/CHBApp.BK.exe
+ create mode 100644 src/CHBApp.BK/bin/Debug/net8.0-windows/CHBApp.BK.pdb
+ create mode 100644 src/CHBApp.BK/bin/Debug/net8.0-windows/CHBApp.BK.runtimeconfig.json
+ create mode 100644 src/CHBApp.BK/obj/CHBApp.BK.csproj.nuget.dgspec.json
+ create mode 100644 src/CHBApp.BK/obj/CHBApp.BK.csproj.nuget.g.props
+ create mode 100644 src/CHBApp.BK/obj/CHBApp.BK.csproj.nuget.g.targets
+ create mode 100644 src/CHBApp.BK/obj/Debug/net8.0-windows/.NETCoreApp,Version=v8.0.AssemblyAttributes.cs
+ create mode 100644 src/CHBApp.BK/obj/Debug/net8.0-windows/CHBApp.BK.AssemblyInfo.cs
+ create mode 100644 src/CHBApp.BK/obj/Debug/net8.0-windows/CHBApp.BK.AssemblyInfoInputs.cache
+ create mode 100644 src/CHBApp.BK/obj/Debug/net8.0-windows/CHBApp.BK.Common.CrudFormBase.resources
+ create mode 100644 src/CHBApp.BK/obj/Debug/net8.0-windows/CHBApp.BK.Common.ExportFormBase.resources
+ create mode 100644 src/CHBApp.BK/obj/Debug/net8.0-windows/CHBApp.BK.Forms.BK101.resources
+ create mode 100644 src/CHBApp.BK/obj/Debug/net8.0-windows/CHBApp.BK.Forms.BK102.resources
+ create mode 100644 src/CHBApp.BK/obj/Debug/net8.0-windows/CHBApp.BK.Forms.BK103.resources
+ create mode 100644 src/CHBApp.BK/obj/Debug/net8.0-windows/CHBApp.BK.Forms.BK104.resources
+ create mode 100644 src/CHBApp.BK/obj/Debug/net8.0-windows/CHBApp.BK.Forms.BK105.resources
+ create mode 100644 src/CHBApp.BK/obj/Debug/net8.0-windows/CHBApp.BK.Forms.BK106.resources
+ create mode 100644 src/CHBApp.BK/obj/Debug/net8.0-windows/CHBApp.BK.Forms.BK107.resources
+ create mode 100644 src/CHBApp.BK/obj/Debug/net8.0-windows/CHBApp.BK.Forms.BK108.resources
+ create mode 100644 src/CHBApp.BK/obj/Debug/net8.0-windows/CHBApp.BK.Forms.BK109.resources
+ create mode 100644 src/CHBApp.BK/obj/Debug/net8.0-windows/CHBApp.BK.Forms.BK110.resources
+ create mode 100644 src/CHBApp.BK/obj/Debug/net8.0-windows/CHBApp.BK.Forms.BK111.resources
+ create mode 100644 src/CHBApp.BK/obj/Debug/net8.0-windows/CHBApp.BK.Forms.BK201.resources
+ create mode 100644 src/CHBApp.BK/obj/Debug/net8.0-windows/CHBApp.BK.Forms.BK202.resources
+ create mode 100644 src/CHBApp.BK/obj/Debug/net8.0-windows/CHBApp.BK.Forms.BK301.resources
+ create mode 100644 src/CHBApp.BK/obj/Debug/net8.0-windows/CHBApp.BK.Forms.BK302.resources
+ create mode 100644 src/CHBApp.BK/obj/Debug/net8.0-windows/CHBApp.BK.Forms.BK401.resources
+ create mode 100644 src/CHBApp.BK/obj/Debug/net8.0-windows/CHBApp.BK.Forms.BK4011.resources
+ create mode 100644 src/CHBApp.BK/obj/Debug/net8.0-windows/CHBApp.BK.Forms.BK4012.resources
+ create mode 100644 src/CHBApp.BK/obj/Debug/net8.0-windows/CHBApp.BK.Forms.BK402.resources
+ create mode 100644 src/CHBApp.BK/obj/Debug/net8.0-windows/CHBApp.BK.Forms.BK403.resources
+ create mode 100644 src/CHBApp.BK/obj/Debug/net8.0-windows/CHBApp.BK.Forms.BK404.resources
+ create mode 100644 src/CHBApp.BK/obj/Debug/net8.0-windows/CHBApp.BK.Forms.BK405.resources
+ create mode 100644 src/CHBApp.BK/obj/Debug/net8.0-windows/CHBApp.BK.Forms.BK406.resources
+ create mode 100644 src/CHBApp.BK/obj/Debug/net8.0-windows/CHBApp.BK.Forms.BK407.resources
+ create mode 100644 src/CHBApp.BK/obj/Debug/net8.0-windows/CHBApp.BK.Forms.BK408.resources
+ create mode 100644 src/CHBApp.BK/obj/Debug/net8.0-windows/CHBApp.BK.Forms.BK501.resources
+ create mode 100644 src/CHBApp.BK/obj/Debug/net8.0-windows/CHBApp.BK.Forms.BK502.resources
+ create mode 100644 src/CHBApp.BK/obj/Debug/net8.0-windows/CHBApp.BK.Forms.BK503.resources
+ create mode 100644 src/CHBApp.BK/obj/Debug/net8.0-windows/CHBApp.BK.Forms.BK504.resources
+ create mode 100644 src/CHBApp.BK/obj/Debug/net8.0-windows/CHBApp.BK.Forms.BK505.resources
+ create mode 100644 src/CHBApp.BK/obj/Debug/net8.0-windows/CHBApp.BK.Forms.BK_EmpImport.resources
+ create mode 100644 src/CHBApp.BK/obj/Debug/net8.0-windows/CHBApp.BK.Forms.FrmLogin.resources
+ create mode 100644 src/CHBApp.BK/obj/Debug/net8.0-windows/CHBApp.BK.Forms.FrmSubM5.resources
+ create mode 100644 src/CHBApp.BK/obj/Debug/net8.0-windows/CHBApp.BK.GeneratedMSBuildEditorConfig.editorconfig
+ create mode 100644 src/CHBApp.BK/obj/Debug/net8.0-windows/CHBApp.BK.GlobalUsings.g.cs
+ create mode 100644 src/CHBApp.BK/obj/Debug/net8.0-windows/CHBApp.BK.assets.cache
+ create mode 100644 src/CHBApp.BK/obj/Debug/net8.0-windows/CHBApp.BK.csproj.BuildWithSkipAnalyzers
+ create mode 100644 src/CHBApp.BK/obj/Debug/net8.0-windows/CHBApp.BK.csproj.CoreCompileInputs.cache
+ create mode 100644 src/CHBApp.BK/obj/Debug/net8.0-windows/CHBApp.BK.csproj.FileListAbsolute.txt
+ create mode 100644 src/CHBApp.BK/obj/Debug/net8.0-windows/CHBApp.BK.csproj.GenerateResource.cache
+ create mode 100644 src/CHBApp.BK/obj/Debug/net8.0-windows/CHBApp.BK.designer.deps.json
+ create mode 100644 src/CHBApp.BK/obj/Debug/net8.0-windows/CHBApp.BK.designer.runtimeconfig.json
+ create mode 100644 src/CHBApp.BK/obj/Debug/net8.0-windows/CHBApp.BK.dll
+ create mode 100644 src/CHBApp.BK/obj/Debug/net8.0-windows/CHBApp.BK.genruntimeconfig.cache
+ create mode 100644 src/CHBApp.BK/obj/Debug/net8.0-windows/CHBApp.BK.pdb
+ create mode 100644 src/CHBApp.BK/obj/Debug/net8.0-windows/apphost.exe
+ create mode 100644 src/CHBApp.BK/obj/Debug/net8.0-windows/ref/CHBApp.BK.dll
+ create mode 100644 src/CHBApp.BK/obj/Debug/net8.0-windows/refint/CHBApp.BK.dll
+ create mode 100644 src/CHBApp.BK/obj/project.assets.json
+ create mode 100644 src/CHBApp.BK/obj/project.nuget.cache
+branch 'main' set up to track 'origin/main'.
+git.exe : To https://github.com/we77465/my-app.git
+位於 D:\work\do_git.ps1:34 字元:2
++ (& git push -u origin main --force 2>&1) | Out-File -FilePath $logPat ...
++  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (To https://github.com/we77465/my-app.git:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+ + d0fe330...b4a3a1d main -> main (forced update)
+DONE

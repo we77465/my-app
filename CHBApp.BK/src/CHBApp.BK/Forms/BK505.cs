@@ -1,0 +1,30 @@
+using System.IO;
+using System.Text;
+using System.Windows.Forms;
+using CHBApp.BK.Models;
+using CHBApp.BK.Services;
+
+namespace CHBApp.BK.Forms;
+
+/// <summary>BK505 產生二次處理磁片 (百年規格)</summary>
+public partial class BK505 : Form
+{
+    public BK505() => InitializeComponent();
+    private void btnRun_Click(object s, EventArgs e)
+    {
+        var fails = BkacRepository.Results.Where(r => r.RESULT != "00").ToList();
+        if (fails.Count == 0) { MessageBox.Show("無失敗資料可二扣", "注意"); return; }
+        var employees = fails.Select(r => new Bkac
+        {
+            EMP_NO = r.EMP_NO, EMP_NAME = r.EMP_NAME, EMP_ACCNO = r.EMP_ACCNO,
+            BASE_SAL = r.EMP_PAY, EMP_PID = r.EMP_PID, EMP_FLAG = "1", EMP_FLAG1 = "1", EMP_KIND = "01"
+        });
+        using var sfd = new SaveFileDialog { Filter = "二扣磁片(百年) (*.TXT)|*.TXT", FileName = "PCCUT_2ND_BNYR.TXT" };
+        if (sfd.ShowDialog(this) != DialogResult.OK) return;
+        var content = PccutExporter.Export(employees, BkacRepository.Enterprise, dt.Value, PccutExporter.Format.Bnyr130);
+        File.WriteAllText(sfd.FileName, content, Encoding.UTF8);
+        lblTotal.Text = $"總筆數 {fails.Count} / 總金額 {fails.Sum(x => x.EMP_PAY):N0}";
+        MessageBox.Show("二扣磁片(百年) 產生完成", "訊息");
+    }
+    private void btnExit_Click(object s, EventArgs e) => Close();
+}

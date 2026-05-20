@@ -1,0 +1,66 @@
+﻿START 05/17/2026 10:04:17
+targetPath: D:\work\上傳到公司
+=== STEP 1: Copy screenshots ===
+MISSING: screenshot-1778981364483.jpg
+MISSING: screenshot-1778982200426.jpg
+MISSING: screenshot-1778982168777.jpg
+MISSING: screenshot-1778982188134.jpg
+MISSING: screenshot-1778981158339.jpg
+MISSING: screenshot-1778982084279.jpg
+MISSING: screenshot-1778982017918.jpg
+MISSING: screenshot-1778980903200.jpg
+MISSING: screenshot-1778980953465.jpg
+MISSING: screenshot-1778982118466.jpg
+MISSING: screenshot-1778981075199.jpg
+MISSING: screenshot-1778982104738.jpg
+MISSING: screenshot-1778982062866.jpg
+MISSING: screenshot-1778981065359.jpg
+MISSING: screenshot-1778981975166.jpg
+MISSING: screenshot-1778982148020.jpg
+MISSING: screenshot-1778980914758.jpg
+MISSING: screenshot-1778981355622.jpg
+MISSING: screenshot-1778982045010.jpg
+Copied: 0 files
+=== STEP 2: Generate Word report ===
+node.exe : node:internal/modules/cjs/loader:1368
+位於 D:\work\do_chbapp_report.ps1:64 字元:13
++ $jsResult = & node "D:\work\create_report.js" 2>&1
++             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (node:internal/modules/cjs/loader:1368:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  throw err;
+  ^
+
+Error: Cannot find module 'docx'
+Require stack:
+- D:\work\create_report.js
+    at Function._resolveFilename (node:internal/modules/cjs/loader:1365:15)
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1021:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1026:22)
+    at Function._load (node:internal/modules/cjs/loader:1175:37)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)
+    at Module.require (node:internal/modules/cjs/loader:1445:12)
+    at require (node:internal/modules/helpers:135:16)
+    at Object.<anonymous> (D:\work\create_report.js:5:5)
+    at Module._compile (node:internal/modules/cjs/loader:1688:14) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [ 'D:\\work\\create_report.js' ]
+}
+
+Node.js v22.18.0
+=== STEP 3: Git push ===
+On branch main
+Your branch is up to date with 'origin/main'.
+
+nothing to commit, working tree clean
+branch 'main' set up to track 'origin/main'.
+git.exe : Everything up-to-date
+位於 D:\work\do_chbapp_report.ps1:87 字元:2
++ (& git push -u origin main --force 2>&1) | Out-File -FilePath $logPat ...
++  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Everything up-to-date:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+=== DONE 05/17/2026 10:04:19 ===

@@ -1,0 +1,51 @@
+<?xml version="1.0"?>
+<IFX xmlns="http://www.ifxforum.org" xmlns:ds="http://www.w3.org/2000/09/xmldsig#" xmlns:tw.org.ba="http://www.ba.org.tw" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:scheamLocation="http://www.ifxforum.org http://www.ba.org.tw/FXML/IFX130-TW12-URI.xsd" xsi:schemaLocation="http://www.ifxforum.org http://www.ba.org.tw/FXML/IFX130-TW12-URI.xsd">
+	<EAIHeader>
+		<TxnID>F0104</TxnID>
+		<RecID>sendToHost</RecID>
+		<SrcSystemID>PB</SrcSystemID>
+		<!-- 來源系統 -->
+		<DomID>XML</DomID>
+	</EAIHeader>
+	<LogTxn>
+		<TxnID>F0104</TxnID>
+		<PrcDt>交易執行日期(YYYY-MM-DD)</PrcDt>
+		<!-- 交易日期(YYYY-MM-DD)-->
+		<PmtID>前端交易序號</PmtID>
+		<!--PmtID(YYYYMMDDXX999999) = YYYYMMDD+系統XX+流水號999999。(PmtID為前端系統送電文進EAI時使用)-->
+	</LogTxn>
+	<EAIBody>
+		<MsgRq>
+			<Header>
+				<TxnId>F0104</TxnId>
+			</Header>
+			<SvcRq>
+				<IBRNO>分行別, 9(04)</IBRNO>
+				<INQCD>查詢方式(1:統一編號 2:帳號), 9 (01)</INQCD>
+				<ACTNO>帳號</ACTNO>
+				<CIFKEY>統一編號, X(10)</CIFKEY>
+				<CIFERR>統一編號錯誤代碼, X(01)</CIFERR>
+				<IQKIND>查詢帳務種類,9(02)</IQKIND>
+				<!-- 查詢帳務種類:
+                                           01.台幣活期存款
+                                           02.外幣活期存款
+                                           03.台幣定期存款
+                                           04.外幣定期存款
+                                           05.放款
+                                           06.支存
+                                           07.台幣定存 - 自動化設備存入
+                                           08.黃金存摺
+                                           00.全部帳務
+				-->
+				<SFG>資料查詢範圍, 9(01)</SFG>
+				<!-- 0:查詢全部資料 1:查詢未結清資料 預設值為0 查詢全部資料 -->
+				<DATEKD>日期種類(0.不指定，1.依起存日，2.依解約日)(限查詢帳務種類為03-台幣定期存款與04-台幣定期存款時，才可輸入1或2。),9(01)</DATEKD>
+				<!-- (EAI預設值為0) -->
+				<STRDATE>日期起日(輸入00000000，表查全部),9(08)</STRDATE>
+				<!-- (EAI預設值為00000000) -->
+				<ENDDATE>日期迄日(輸入00000000，表查全部),9(08)</ENDDATE>
+				<!-- (EAI預設值為00000000) -->
+			</SvcRq>
+		</MsgRq>
+	</EAIBody>
+</IFX>

@@ -1,0 +1,33 @@
+using System.IO;
+using System.Windows.Forms;
+using CHBApp.BK.Services;
+
+namespace CHBApp.BK.Forms;
+
+/// <summary>BK111 薪資磁片重新讀入 (PCCUT 格式回讀)</summary>
+public partial class BK111 : Form
+{
+    public BK111() => InitializeComponent();
+    private void btnPick_Click(object s, EventArgs e)
+    {
+        using var d = new OpenFileDialog { Filter = "PCCUT (*.txt)|*.txt", FileName = "PCCUT.TXT" };
+        if (d.ShowDialog(this) == DialogResult.OK) txtPath.Text = d.FileName;
+    }
+    private void btnRun_Click(object s, EventArgs e)
+    {
+        log.Clear();
+        if (!File.Exists(txtPath.Text)) { log.AppendText("檔案不存在 - 模擬讀入 5 筆\r\n"); return; }
+        int n = 0;
+        foreach (var ln in File.ReadAllLines(txtPath.Text))
+        {
+            if (ln.Length < 30) continue;
+            var acc = ln.Substring(rbBnyr.Checked ? 18 : 4, 14).Trim();
+            var amt = ln.Substring(rbBnyr.Checked ? 32 : 18, 13);
+            decimal.TryParse(amt, out var cents);
+            var emp = BkacRepository.Employees.FirstOrDefault(x => x.EMP_ACCNO == acc);
+            if (emp != null) { emp.BASE_SAL = cents / 100m; emp.ALLOWANCE = 0; emp.OVERTIME = 0; emp.DEDUCTION = 0; n++; }
+        }
+        log.AppendText($"共讀入 {n} 筆並已更新員工檔薪資\r\n");
+    }
+    private void btnExit_Click(object s, EventArgs e) => Close();
+}

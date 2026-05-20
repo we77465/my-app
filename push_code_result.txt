@@ -1,0 +1,7 @@
+﻿[start] 05/21/2026 07:55:34
+Copying source from C:\CHBAPP374\CHBApp.BK to D:\work\\CHBApp.BK...
+Robocopy exit: 0
+cwd: D:\work
+removed old .git
+commit msg: 新增真正密碼修改功能
+Initialized empty Git repository in D:/work/.git/

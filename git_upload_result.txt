@@ -1,0 +1,27 @@
+start
+removed old .git
+cwd: D:\work\上傳到公司
+$ git init -b main
+  Initialized empty Git repository in D:/work/上傳到公司/.git/
+  returncode: 0
+$ git config user.email kenandme87@gmail.com
+  returncode: 0
+$ git config user.name ken
+  returncode: 0
+$ git remote add origin https://github.com/we77465/my-app.git
+  returncode: 0
+$ git add .
+  returncode: 0
+$ git commit -m 新增 CHBApp 檢核比對報告
+  [main (root-commit) 9a01a59] 新增 CHBApp 檢核比對報告
+ 3 files changed, 1 insertion(+)
+ create mode 100644 ".~lock.CHBApp_\346\252\242\346\240\270\346\257\224\345\260\215\345\240\261\345\221\212.docx#"
+ create mode 100644 "CHBApp_\346\252\242\346\240\270\346\257\224\345\260\215\345\240\261\345\221\212.docx"
+ create mode 100644 "CHBApp_\346\270\254\350\251\246\345\240\261\345\221\212.docx"
+  returncode: 0
+$ git push -u origin main --force
+  branch 'main' set up to track 'origin/main'.
+  STDERR: To https://github.com/we77465/my-app.git
+ + ed210bc...9a01a59 main -> main (forced update)
+  returncode: 0
+DONE
