@@ -1,0 +1,113 @@
+﻿using System;
+using System.Configuration;
+using System.Data.SqlClient;
+using System.Web;
+
+/// <summary>
+/// 新臺幣定期存款專案利率申請 - 本機測試用使用者資訊。
+/// 公司正式區有 AD/SSO 版本的 UserInfo，帶回前請刪除此檔。
+/// </summary>
+/// <remarks>
+/// 本機透過 URL ?SID=員編 模擬登入，例：Main.aspx?SID=A0001
+///
+/// TitleLevel (對應「需求確認書 §2 權限設定」)：
+///   1 = 經辦       - 可新增/編輯/送出，送出後 Status = 1
+///   2 = 襄理       - 處理 Status = 1，放行 → 2 / 退回 → 0
+///   3 = 經理       - 處理 Status = 2，放行 → 4 / 退回 → 0
+///   4 = 總行經辦   - 處理 Status = 4，放行 → 6 / 退回 → 0
+///   5 = 總行科長   - 處理 Status = 6，決行 → 9 / 退回 → 0 (必填利率別代號)
+/// </remarks>
+public class UserInfo
+{
+    public string EmpID      { get; private set; }
+    public string EmpName    { get; private set; }
+    public string BranchCode { get; private set; }
+    public string BranchName { get; private set; }
+    public string Title      { get; private set; }
+    public int    TitleLevel { get; private set; }
+    public int    BranchType { get; private set; }  // 1 = 分行, 2 = 總行
+
+    private UserInfo() { }
+
+    /// <summary>
+    /// 取得本次請求的登入使用者；URL 未帶 SID 時預設 A0001。
+    /// 同一 Session 內快取，避免每次都查 DB。
+    /// </summary>
+    public static UserInfo Current
+    {
+        get
+        {
+            var context = HttpContext.Current;
+            var cached  = context.Session != null ? context.Session["NTD_CurrentUser"] as UserInfo : null;
+
+            string requestedSid = (context.Request.QueryString["SID"] ?? "").Trim().ToUpper();
+            if (string.IsNullOrEmpty(requestedSid) && cached != null) return cached;
+            if (string.IsNullOrEmpty(requestedSid)) requestedSid = "A0001";
+
+            var user = LoadByEmpID(requestedSid) ?? DefaultUser();
+            if (context.Session != null) context.Session["NTD_CurrentUser"] = user;
+            return user;
+        }
+    }
+
+    /// <summary>由 EMPLOYEE / BranchOnly 取出指定員編的資料。查無資料回 null。</summary>
+    private static UserInfo LoadByEmpID(string empID)
+    {
+        const string sql = @"
+            SELECT e.EmpID, e.EmpName, e.BranchCode, e.Title, e.TitleLevel,
+                   ISNULL(b.BranchName, '') AS BranchName,
+                   ISNULL(b.BranchType, 1)  AS BranchType
+            FROM dbo.EMPLOYEE   e
+            LEFT JOIN dbo.BranchOnly b ON b.BranchCode = e.BranchCode
+            WHERE e.EmpID = @EmpID AND e.IsActive = 1";
+
+        string connStr = ConfigurationManager.ConnectionStrings["chb_iom"].ConnectionString;
+        using (var conn = new SqlConnection(connStr))
+        using (var cmd  = new SqlCommand(sql, conn))
+        {
+            cmd.Parameters.AddWithValue("@EmpID", empID);
+            conn.Open();
+            using (var reader = cmd.ExecuteReader())
+            {
+                if (!reader.Read()) return null;
+                return new UserInfo
+                {
+                    EmpID      = Convert.ToString(reader["EmpID"]),
+                    EmpName    = Convert.ToString(reader["EmpName"]),
+                    BranchCode = Convert.ToString(reader["BranchCode"]),
+                    BranchName = Convert.ToString(reader["BranchName"]),
+                    Title      = Convert.ToString(reader["Title"]),
+                    TitleLevel = Convert.ToInt32(reader["TitleLevel"]),
+                    BranchType = Convert.ToInt32(reader["BranchType"])
+                };
+            }
+        }
+    }
+
+    /// <summary>DB 尚未建立或 EMPLOYEE 沒資料時的預設帳號，僅供本機初次啟動使用。</summary>
+    private static UserInfo DefaultUser()
+    {
+        return new UserInfo
+        {
+            EmpID = "A0001", EmpName = "王經辦",
+            BranchCode = "5234", BranchName = "民生分行",
+            Title = "經辦", TitleLevel = 1, BranchType = 1
+        };
+    }
+
+    /// <summary>
+    /// 將目前使用者員編以 querystring 形式附加於 URL，
+    /// 用於本機測試時各頁面跳轉維持登入身分。
+    /// </summary>
+    public string AppendSid(string url)
+    {
+        if (string.IsNullOrEmpty(url)) return url;
+        return url + (url.Contains("?") ? "&" : "?") + "SID=" + EmpID;
+    }
+
+    /// <summary>是否可新增/編輯申請單 (僅經辦)。</summary>
+    public bool CanCreateApply { get { return TitleLevel == 1; } }
+
+    /// <summary>是否為總行單位 (BranchType = 2)。</summary>
+    public bool IsHeadOffice { get { return BranchType == 2; } }
+}

@@ -1,0 +1,2054 @@
+﻿@page
+@using Microsoft.Extensions.Configuration
+@using Microsoft.AspNetCore.Hosting
+@inject IConfiguration Configuration
+@inject IWebHostEnvironment WebHostEnvironment
+@using Microsoft.Data.SqlClient
+@using System.Collections.Generic
+@using System.Text.Json
+@using System.Text.Json.Nodes
+@using System;
+@using System.Net;
+@using System.Net.Http;
+@using System.IO;
+@using System.Data
+@using System.Net.Sockets;
+@using Microsoft.AspNetCore.Http.Extensions;
+@{
+    ViewBag.Request = Request;
+    ViewBag.ParentViewBag = ViewBag;
+
+}
+
+@{
+    string url = HttpContext.Request.GetDisplayUrl();
+    var uri = url.Split("/");
+    string env = "official";
+    ViewBag.env = "official";
+    if (uri[2] == "inapt02.intra.chb.com.tw" || uri[2] == "localhost:5124" || uri[2] == "localhost:7124")
+    {
+        env = "test";//這幾個網域設為測試環境
+        ViewBag.env = "test";
+    }
+    if (Request.Headers["User-Agent"].ToString().Contains("MSIE"))
+    {
+        WriteLiteral("應用程式未相容於IE，請使用Chrome");
+        return;
+    }
+
+    if (Request.ContentLength > 0)
+    {
+        ViewBag.docno = Request.Form["docno"];
+        ViewBag.ver = Request.Form["fintechver"];
+    }
+    else
+    {
+        ViewBag.docno = Request.Query.ContainsKey("docno") ? Request.Query["docno"].ToString() : ViewBag.docno;
+    }
+    var who = GetSSONo(Request.Query);
+
+    ViewBag.ubrno = who["OU_ID"].PadRight(6, '0').Substring(0, 6);
+    ViewBag.uid = who["USR_ID"];
+    ViewBag.famin = who["FAMIN"];   //判斷是否為發明人
+    ViewBag.sign = "N"; //是否在放行狀態
+
+    string truepath = @WebHostEnvironment.ContentRootPath;
+    truepath = truepath.Replace("DotNet6", "UpLoad\\chb01\\" + ViewBag.docno);
+    var fesip = "ftp://10.100.61.67";
+    var ap2ip = "ftp://inap02.intra.chb.com.tw";
+    NetworkCredential fes = new NetworkCredential("TIPS", "tips@CHB");
+    NetworkCredential ap2 = new NetworkCredential("dwintra", "iPhone6");
+}
+@{
+    ViewBag._checks = string.Empty;
+    if (Request.ContentLength > 0)
+    {
+        await Html.PartialAsync("_checks.cshtml"); //檢核某些必填項目
+    }
+}
+@{
+    if (env == "test")//如果是測試環境，換成測試ip
+    {
+        fesip = "ftp://10.100.71.64";//FES
+        ap2ip = "ftp://10.100.7.188";//內網AP2
+        fes = new NetworkCredential("intrauser", "intrauser@CHB");
+    }
+
+    var feschb01 = fesip + "/OutUFTP/chb01/";
+    var fesnp01 = fesip + "/OutUFTP/np01/"; //連邦
+    var fesp01 = fesip + "/OutUFTP/YIPO/"; //育晟
+    var ap2ftp = ap2ip + "/IntraWeb/UpLoad/chb01/";
+    if (env == "test")
+    {
+        fesp01 = fesip + "/OutUFTP/p01/"; //測試環境育晟目錄是p01
+    }
+    // ViewBag.docno = DateTime.Now.ToString("yyyyMMdd") + ViewBag.ubrno + "01";
+    if (Request.ContentLength > 0)
+    {
+        // ViewBag.docno = docnogen(DateTime.Now.ToString("yyyyMMdd"), ViewBag.ubrno,"1");
+        //ViewBag.docno = Request.Form["docno"];
+    }
+    else
+    {
+        ViewBag.docno = docnogen(DateTime.Now.ToString("yyyyMMdd"), ViewBag.ubrno, "0");
+    }
+
+    ViewBag.docno = Request.Query.ContainsKey("docno") ? Request.Query["docno"].ToString() : ViewBag.docno;
+
+
+    List<Dictionary<string, string>> dSysTextJson = getData();
+    var log = GettblLog(ViewBag.docno);//取得狀態
+
+    ViewBag.Status = "issue";   //目前狀態，決定資料是否能修改用
+
+    var data = select(dSysTextJson[0]);
+    foreach (var d in data)
+    {
+        foreach (var id in d)
+        {
+            if (dSysTextJson[0].ContainsKey(id.Key))
+            {
+                dSysTextJson[0][id.Key] = id.Value;
+            }
+            else
+            {
+                dSysTextJson[0].Add(id.Key, id.Value);
+            }
+        }
+    }
+
+    ViewBag.data = dSysTextJson;
+    ViewBag._approvable = string.Empty;
+    await Html.PartialAsync("_approvable.cshtml");
+    var _ViewBag = ViewBag.ParentViewBag;
+    var approvableMsg = string.Empty;
+    truepath = @WebHostEnvironment.ContentRootPath;
+    truepath = truepath.Replace("DotNet6", "UpLoad\\chb01\\" + _ViewBag.docno);
+
+    if (Request.ContentLength > 0)
+    {
+        switch (Request.Form["hHtml"].ToString())
+        {
+            //case "送簽": UpdateOrInsert(Request.Form); ReadySign(Request.Form); break;
+            //case "退回": ReadySign(Request.Form); break;
+            case "儲存":
+                {
+                    // if(checkError()==false)
+                    // {
+                    if (log.Count == 0 || log["_issue"].ToString() == "-2")//新提案資料庫沒有所以log.Count=0，已經儲存過但還沒有送負責人核可log["_issue"]=-2
+                    {
+                        UpdateOrInsert(Request.Form);
+                        who = GetSSONo(Request.Query);
+                        ViewBag.famin = who["FAMIN"];
+                    }
+                    else
+                        Update(Request.Form);
+                    // }
+                    break;
+                }
+            case "儲存並送負責人核可":
+                {
+                    var file = Request.Form.Files;
+
+                    foreach (var f in file)
+                    {
+                        FileUpload(f, truepath);
+                    }
+                    await Html.PartialAsync("_approvable.cshtml");
+                    if (checkError() == false && string.IsNullOrEmpty(ViewBag._checks))
+                    {
+                        ReadySign(Request.Form);
+                    }
+                    else
+                    {
+                        if (log.Count == 0 || log["_issue"].ToString() == "-2")
+                            UpdateOrInsert(Request.Form);
+                        else
+                            Update(Request.Form);
+                    }
+                    break;
+                }
+            case "送主管核可":
+            case "放行":
+                {
+                    if (log["_issue"] == "3" && log["_rd"] == "1")//【研發】負責人放行時，判斷使否有確實填寫檔案取得時間，若無請退回經辦
+                    {
+                        Update(Request.Form);
+                        if (checkError() == false)
+                        {
+                            ReadySign(Request.Form);
+                        }
+                    }
+                    else if (log["_issue"] == "1")//【發想】負責人放行時，判斷使否有確實填寫檔案取得時間，若無請退回經辦
+                    {
+                        if (checkError() == false)
+                        {
+                            ReadySign(Request.Form);
+                        }
+                    }
+                    else if (log["_proposal"] == "1")//【提案】負責人放行時，判斷使否有確實填寫檔案取得時間，若無請退回經辦
+                    {
+                        if (checkError() == false)
+                        {
+                            ReadySign(Request.Form);
+                        }
+                    }
+                    else if (log["_proposal"] == "3" && log["FlowStatus"] == "1")//【申請/審核/領證】負責人放行時，判斷使否有確實填寫檔案取得時間，若無請退回經辦
+                    {
+                        if (checkError() == false)
+                        {
+                            ReadySign(Request.Form);
+                        }
+                    }
+                    else
+                    {
+                        if (log["_proposal"] == "2") //【提案】會選擇往來事務所，經主管放行後，事務所才能在fes看到所屬案件的交換檔案
+                        {
+                            if (toFES(Request.Form))
+                                ReadySign(Request.Form);
+                        }
+                        else
+                        {
+                            ReadySign(Request.Form);
+                        }
+                    }
+                }// save to db
+                break;
+            case "退回修改": ReadySign(Request.Form); break;
+            case "刪除": ReadySign(Request.Form); break;
+            case "新增一筆": newLine(Request.Form, "Add"); Update(Request.Form); break;
+            case "刪除一筆": newLine(Request.Form, "Del"); Update(Request.Form); break;    //20240410 數金處 薛伃庭 研發說明新增刪除一筆功能
+            default: break;
+        }
+
+        var p01 = "0";
+
+        if (log["_proposal"] == "3") //【申請/審核/領證】，發明人上傳之檔案無須主管放行，事務所即可於fes上看到
+        {
+            if (Request.Form.ContainsKey("專利事務所"))
+            {
+                if (Request.Form["專利事務所"] == "育晟")
+                    p01 = fesp01;
+                else if (Request.Form["專利事務所"] == "連邦")
+                    p01 = fesnp01;
+            }
+        }
+        var files = Request.Form.Files;
+
+        foreach (var f in files)
+        {
+            if (p01 != "0")
+                upDoc(f, fes, p01);
+            if (env == "test")  //測試環境多傳chb01
+                upDoc(f, fes, feschb01);
+            //upDoc(f, ap2, ap2ftp);
+            FileUpload(f, truepath);
+        }
+
+    }
+
+    data = select(dSysTextJson[0]);
+    foreach (var d in data)
+    {
+        foreach (var id in d)
+        {
+            if (dSysTextJson[0].ContainsKey(id.Key))
+            {
+                dSysTextJson[0][id.Key] = id.Value;
+            }
+            else
+            {
+                dSysTextJson[0].Add(id.Key, id.Value);
+            }
+        }
+    }
+
+    ViewBag.data = dSysTextJson;
+    ViewBag.rdLine = string.IsNullOrEmpty(ViewBag.rdLine) ? ViewBag.data[0]["研發說明筆數"] : ViewBag.rdLine;
+    ViewBag.ver = ViewBag.data[0].ContainsKey("fintechver") ? ViewBag.data[0]["fintechver"] : "0";
+
+    var mfs = "-2-2-2-2-2";
+    if (log.Count != 0)
+    {
+        mfs = log["_issue"] + log["_rd"] + log["_proposal"] + log["FlowStatus"] + log["_pay"];
+
+        if (ViewBag.ver == "1") //新版研發跟提案合併
+        {
+            //目前狀態，決定資料是否能修改用，預設為issue
+            if (log["FlowStatus"].ToString() == "3" || log["FlowStatus"].ToString() == "2" || log["FlowStatus"].ToString() == "1")
+                ViewBag.Status = "end";
+            else if ((log["_rd"].ToString() == "3" && log["_proposal"].ToString() == "3")
+            || (log["_rd"].ToString() == "2" && log["_proposal"].ToString() == "2")
+            || (log["_rd"].ToString() == "1" && log["_proposal"].ToString() == "1"))
+                ViewBag.Status = "apply";
+            else if (log["_issue"].ToString() == "3" || log["_issue"].ToString() == "2" || log["_issue"].ToString() == "1")
+                ViewBag.Status = "rdproposalmerge";
+        }
+        else //舊版研發跟提案分開
+        {
+            if (log["_issue"] == "3" && log["_rd"] == "3" || log["_issue"] == "3" && log["_rd"] == "1") //判斷rd的審核是否出現
+            {
+                ViewBag.showrd = "Y";
+            }
+            else
+            {
+                ViewBag.showrd = "N";
+            }
+            //目前狀態，決定資料是否能修改用，預設為issue
+            if (log["FlowStatus"].ToString() == "3" || log["FlowStatus"].ToString() == "2" || log["FlowStatus"].ToString() == "1")
+                ViewBag.Status = "end";
+            else if (log["_proposal"].ToString() == "3" || log["_proposal"].ToString() == "2" || log["_proposal"].ToString() == "1")
+                ViewBag.Status = "apply";
+            else if (log["_rd"].ToString() == "3")
+                ViewBag.Status = "proposal";
+            else if (log["_rd"].ToString() == "2" || log["_rd"].ToString() == "1")
+                ViewBag.Status = "rdproposal";   //rd審核中
+            else if (log["_issue"].ToString() == "3" || log["_issue"].ToString() == "2" || log["_issue"].ToString() == "1")
+                ViewBag.Status = "rd";
+        }
+    }
+
+}
+@{
+    if (ViewBag.Status == "issue")
+    {
+        if (log.Count > 0 && log["_issue"].ToString() == "-2")
+        {
+            ViewBag._popups = string.Empty;
+            await Html.PartialAsync("_popups.cshtml");
+            if (string.IsNullOrEmpty(ViewBag._popups))
+            {
+                <script>alert('@Html.Raw(ViewBag._popups)');</script>
+            }
+
+        }
+    }
+}
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<style>
+    table {
+        border-collapse: collapse;
+        border-spacing: 0;
+        border: 1px solid #ddd;
+        table-layout: fixed;
+        width: 100%;
+    }
+
+    th, td {
+        text-align: left;
+        padding: 8px;
+        white-space: normal;
+        word-wrap: break-word;
+        word-break: break-all;
+    }
+
+    tr:nth-child(even) {
+        background-color: #f2f2f2
+    }
+</style>
+
+<form method="post" enctype="multipart/form-data">
+    @if (log.Count == 0 || (mfs.Replace("3", "") == string.Empty && mfs != "3333" && ViewBag.famin == "Y") || (mfs.Replace("3", "") == "-2" && ViewBag.famin == "Y"))
+    {
+        ViewBag.sign = "N";
+    }
+    else
+    {
+        ViewBag.sign = "Y";
+    }
+    @if (log.Count == 0 || log["_issue"].ToString() == "-2")//新增的資料帶入版本
+    {
+        ViewBag.ver = "1";
+    }
+    else
+    {
+        ViewBag.ver = ViewBag.data[0].ContainsKey("fintechver") ? ViewBag.data[0]["fintechver"] : "0";
+    }
+    <!--_issue.cshtml 發想 -->
+    @await Html.PartialAsync("_issue.cshtml")
+    <input type="hidden" name="docno" value=@ViewBag.docno>
+    <input type="hidden" name="brno" value=@ViewBag.ubrno>
+    <input type="hidden" name="fintechver" value=@ViewBag.ver>
+
+    @if (log.Count != 0)
+    {
+        if (ViewBag.ver == "1") //新版研發跟提案合併
+        {
+            if (log["_issue"] == "3" && ViewBag.famin == "Y" || log["_issue"] == "3" && string.Compare(log["_rd"], "0") > 0)//研發提案
+                                                                                                                            @await Html.PartialAsync("_rdproposalmerge.cshtml")
+
+                if ((log["_rd"] == "3" && log["_proposal"] == "3") && ViewBag.famin == "Y" || (log["_rd"] == "3" && log["_proposal"] == "3") && string.Compare(log["FlowStatus"], "0") > 0)//申請/審核/領證
+                {
+                    if (ViewBag.data[0]["對外公開"] == "Y" && ViewBag.data[0]["公開目的"] == "A")
+    @await Html.PartialAsync("_apply.cshtml")
+        }
+
+            if (log["_issue"] != "3")
+            {
+                <input type="hidden" name="issue">
+            }
+            else if (log["_rd"] != "3" && log["_proposal"] != "3")
+            {
+                <input type="hidden" name="rdproposalmerge">
+            }
+            else if (log["FlowStatus"] != "3")
+            {
+                <input type="hidden" name="FlowStatus">
+            }
+            else if (log["_pay"] != "3")
+            {
+                <input type="hidden" name="pay">
+            }
+        }
+        else //舊版研發跟提案分開
+        {
+            if (log["_issue"] == "3" && ViewBag.famin == "Y" || log["_issue"] == "3" && string.Compare(log["_rd"], "0") > 0)//研發
+                                                                                                                            @await Html.PartialAsync("_rd.cshtml")
+
+                if (log["_rd"] == "3" && ViewBag.famin == "Y" || log["_rd"] == "3" && string.Compare(log["_proposal"], "0") > 0)//提案
+                                                                                                                                @await Html.PartialAsync("_proposal.cshtml")
+
+                    if (log["_proposal"] == "3" && ViewBag.famin == "Y" || log["_proposal"] == "3" && string.Compare(log["FlowStatus"], "0") > 0)//申請/審核/領證
+                                                                                                                                                 @await Html.PartialAsync("_apply.cshtml")
+
+                        @*if (log["FlowStatus"] == "3" && ViewBag.famin == "Y" || log["FlowStatus"] == "3" && string.Compare(log["_pay"], "0") > 0)//屆期續存評估表
+                @await Html.PartialAsync("_pay.cshtml")*@
+
+                        if (log["_issue"] != "3")
+                        {
+                            <input type="hidden" name="issue">
+                        }
+                        else if (log["_rd"] != "3")
+                        {
+                            <input type="hidden" name="rd">
+                        }
+                        else if (log["_proposal"] != "3")
+                        {
+                            <input type="hidden" name="proposal">
+                        }
+                        else if (log["FlowStatus"] != "3")
+                        {
+                            <input type="hidden" name="FlowStatus">
+                        }
+                        else if (log["_pay"] != "3")
+                        {
+                            <input type="hidden" name="pay">
+                        }
+        }
+    }
+
+    @if (log.Count == 0 || (mfs.Replace("3", "") == string.Empty && mfs != "3333" && ViewBag.famin == "Y") || (mfs.Replace("3", "") == "-2" && ViewBag.famin == "Y")) //新的提案 or 其中一個階段完成放行(3)，但還沒結案 or 其中一個階段剛儲存(-2)
+    {
+        <input type="submit" value="儲存" onclick="topFunction(this)" />
+        if (mfs.StartsWith("333") && log["FlowStatus"] != "3")    //20240410 數金處 薛伃庭 流程在「申請/審核/領證」時，專利申請狀態為《已核准》、《放棄答辯》、《放棄再審》，才能送負責人核可
+        {
+            if (ViewBag.ver == "1") //新版研發跟提案合併
+            {
+                if (ViewBag.data[0]["對外公開"] == "Y" && ViewBag.data[0]["公開目的"] == "A")
+                {
+                    if (ViewBag.data[0]["核准日"] != "" || ViewBag.data[0]["放棄答辯日"] != "" || ViewBag.data[0]["再審"] == "N")
+                    {
+                        <input type="submit" value="儲存並送負責人核可" onclick="topFunction(this)" style="@(log.Count > 0 ? "" : "display:none")" />
+                    }
+                }
+                else
+                {
+                    <input type="submit" value="儲存並送負責人核可" onclick="topFunction(this)" style="@(log.Count > 0 ? "" : "display:none")" />
+                }
+            }
+            else //舊版研發跟提案分開
+            {
+                if (ViewBag.data[0]["核准日"] != "" || ViewBag.data[0]["放棄答辯日"] != "" || ViewBag.data[0]["再審"] == "N")
+                {
+                    <input type="submit" value="儲存並送負責人核可" onclick="topFunction(this)" style="@(log.Count > 0 ? "" : "display:none")" />
+                }
+            }
+        }
+        else
+        {
+            <input type="submit" value="儲存並送負責人核可" onclick="topFunction(this)" style="@(log.Count > 0 ? "" : "display:none")" />
+        }
+        ViewBag.sign = "N";
+        if (log.Count != 0)
+        {
+            if (log["_issue"] != "3") //20240410 數金處 薛伃庭 經任一主管放行後的案件無法刪除
+            {
+                <input type="submit" value="刪除" onclick="topFunction(this)" />
+            }
+        }
+    }
+    else if (mfs != "3333") //還沒結案，帶負責人放行 or 待主管放行
+    {
+        ViewBag.sign = "Y";
+        if (mfs.Contains("1"))
+        {
+            if (mfs == "1" || mfs == "31")
+            {
+                if (who["lv"] == "00" || who["lv"] == "05" || who["lv"] == "09")
+                {
+                    <input type="submit" value="放行" onclick="topFunction(this)" />
+                    <input type="submit" value="退回修改" onclick="topFunction(this)" />
+                    ViewBag.sign = "Y";
+                }
+            }
+            else if (who["lv"] == "00" || who["lv"] == "05" || who["lv"] == "09")
+            {
+                <input type="submit" value="送主管核可" onclick="topFunction(this)" />
+                <input type="submit" value="退回修改" onclick="topFunction(this)" />
+                ViewBag.sign = "Y";
+            }
+        }
+        else if (mfs.Contains("-") && ViewBag.famin == "Y") //還在申請人編輯狀態(-2)
+        {
+            <input type="submit" value="儲存" onclick="topFunction(this)" />
+            if (log["_proposal"] == "3" && log["FlowStatus"] != "3")    //20240410 數金處 薛伃庭 流程在「申請/審核/領證」時，專利申請狀態為《已核准》、《放棄答辯》、《放棄再審》，才能送負責人核可
+            {
+                if (ViewBag.ver == "1") //新版研發跟提案合併
+                {
+                    if (ViewBag.data[0]["對外公開"] == "Y" && ViewBag.data[0]["公開目的"] == "A")
+                    {
+                        if (ViewBag.data[0]["核准日"] != "" || ViewBag.data[0]["放棄答辯日"] != "" || ViewBag.data[0]["再審"] == "N")
+                        {
+                            <input type="submit" value="儲存並送負責人核可" onclick="topFunction(this)" style="@(log.Count > 0 ? "" : "display:none")" />
+                        }
+                    }
+                    else
+                    {
+                        <input type="submit" value="儲存並送負責人核可" onclick="topFunction(this)" style="@(log.Count > 0 ? "" : "display:none")" />
+                    }
+                }
+                else //舊版研發跟提案分開
+                {
+                    if (ViewBag.data[0]["核准日"] != "" || ViewBag.data[0]["放棄答辯日"] != "" || ViewBag.data[0]["再審"] == "N")
+                    {
+                        <input type="submit" value="儲存並送負責人核可" onclick="topFunction(this)" />
+                    }
+                }
+
+            }
+            else
+            {
+                <input type="submit" value="儲存並送負責人核可" onclick="topFunction(this)" />
+
+            }
+            if (log["_issue"] != "3")   //20240410 數金處 薛伃庭 經任一主管放行後的案件無法刪除
+            {
+                <input type="submit" value="刪除" onclick="topFunction(this)" />
+            }
+            ViewBag.sign = "N";
+        }
+        else
+        {
+            if ((who["lv"] == "00" && (mfs.Replace("3", "") != string.Empty) && (!mfs.Contains("-"))) || (who["lv"] == "05" && (mfs.Replace("3", "") != string.Empty) && (!mfs.Contains("-"))))
+            {
+                <input type="submit" value="放行" onclick="topFunction(this)" />
+                <input type="submit" value="退回修改" onclick="topFunction(this)" />
+                ViewBag.sign = "Y";
+            }
+        }
+    }
+    <input type="button" onclick="history.go(-1);" value="回前頁">
+    <p />
+
+    @if (string.IsNullOrEmpty(ViewBag._checks) == false)
+    {
+        //foreach (var checkMsg in ViewBag._checks.Split('\n'))
+        {
+            <script>alert('@Html.Raw(ViewBag._checks)');</script>
+        }
+    }
+
+    @Html.Hidden("hHtml")
+</form>
+
+<script>
+    // Get the button
+    let mybutton = document.getElementById("myBtn");
+
+    // When the user scrolls down 20px from the top of the document, show the button
+    window.onscroll = function () { scrollFunction() };
+
+    function scrollFunction() {
+        mybutton.style.display = "block";
+    }
+
+    function topFunction(action) {
+        document.getElementById("hHtml").value = action.value;
+    }
+    function handleChange(src) {
+        var display;
+        switch (src.value) {
+            case 'N':
+                display = "none";
+                document.getElementById("符合申請效益說明").value = "";
+                break;
+            case 'Y':
+                display = "block";
+                break;
+        }      document.getElementById("符合申請效益說明").style.display = display;
+
+
+    }
+</script>
+
+@{
+    Dictionary<string, string> GetSSONo(Microsoft.AspNetCore.Http.IQueryCollection a_q)
+    {
+        var emp = new Dictionary<string, string>()
+        {
+            ["lv"] = "",
+            ["OU_ID"] = "",
+            ["OU_NAME"] = "",
+            ["USR_ID"] = "",
+            ["NAME"] = "",
+            ["MANAGER_LEVEL"] = "",
+            ["JOBCODE"] = "",
+            ["BRNAME"] = "",
+            ["JOBNAME"] = "",
+            ["dn"] = "",
+            ["DEPTID"] = ""
+        };
+
+        string sid = a_q.ContainsKey("sid") ? a_q["sid"].ToString() : "";
+        string tid = a_q.ContainsKey("tid") ? a_q["tid"].ToString() : "";
+        string bid = a_q.ContainsKey("bid") ? a_q["bid"].ToString() : "";
+
+        if (string.IsNullOrEmpty(sid) && string.IsNullOrEmpty(a_q.ContainsKey("Empid") ? a_q["Empid"].ToString() : ""))
+            return emp;
+
+        // Step 1: 打 REST API 取得 USR_ID
+        if (!string.IsNullOrEmpty(sid))
+        {
+            try
+            {
+                string serverIP = HttpContext.Connection.LocalIpAddress?.ToString() ?? "";
+                string url = "https://eip.chb.com.tw/CHB.EIP.WebService/ISAPI/CHBSCWebAPI/CHBSCWebAPI.svc"; //正式機table
+                if (serverIP == "10.100.7.188" || serverIP == "10.100.7.186")
+                {
+                    url = "https://eip.tschb.com/CHB.EIP.WebService/ISAPI/CHBSCWebAPI/CHBSCWebAPI.svc"; //測試機table
+                }
+
+                string localIP = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "";
+                if (HttpContext.Request.Headers.ContainsKey("X-Forwarded-For"))
+                    localIP = HttpContext.Request.Headers["X-Forwarded-For"].ToString().Split(',')[0].Trim();
+                else if (HttpContext.Request.Headers.ContainsKey("X-Real-IP"))
+                    localIP = HttpContext.Request.Headers["X-Real-IP"].ToString();
+
+                string apiUrl = string.Format("{0}/getUserFullInfo/{1}/{2}/{3}/{4}/{5}",
+                    url, sid, localIP, tid, bid, "1");
+
+                using (var client = new HttpClient())
+                {
+                    client.DefaultRequestHeaders.Add("Accept", "application/json");
+                    // ✅ 改用 .Result 同步取得結果
+                    string response = client.GetStringAsync(apiUrl).Result;
+                    string[] responseArray = System.Text.Json.JsonSerializer.Deserialize<string[]>(response);
+
+                    if (responseArray != null && responseArray.Length > 5)
+                    {
+                        emp["USR_ID"] = responseArray[1] ?? "";
+                        emp["OU_ID"] = responseArray[4] ?? "";
+                        emp["OU_NAME"] = responseArray[5] ?? "";
+                    }
+                }
+            }
+            catch
+            {
+                // API 失敗，繼續往下 fallback
+            }
+        }
+
+        // Step 2: API 沒取到 USR_ID → 查 OG_UAT.NornsUserSession
+        if (string.IsNullOrEmpty(emp["USR_ID"]) && !string.IsNullOrEmpty(sid))
+        {
+            string serverIP = HttpContext.Connection.LocalIpAddress?.ToString() ?? "";
+            string tableName = "OG"; //正式機table
+            if (serverIP == "10.100.7.188" || serverIP == "10.100.7.186")
+            {
+                tableName = "OG_UAT"; //測試機table
+            }
+            try
+            {
+                string sqlCmd = @"SELECT [USR_ID] FROM [" + tableName + @"].[dbo].[NornsUserSession]
+WHERE SESSION_ID=@SID
+AND DATEADD(s,@EXPIREDTIME, SESSION_LMT) > GETDATE()";
+
+                using (SqlConnection cnn = new SqlConnection(Configuration["ConnectionStrings:CHBSC"]))
+                {
+                    cnn.Open();
+                    using (SqlCommand cmd = new SqlCommand(sqlCmd, cnn))
+                    {
+                        cmd.Parameters.AddWithValue("@SID", sid);
+                        cmd.Parameters.AddWithValue("@EXPIREDTIME", 68400);
+                        using (SqlDataReader dr = cmd.ExecuteReader())
+                        {
+                            while (dr.Read())
+                                emp["USR_ID"] = dr["USR_ID"].ToString();
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                // DB 查詢失敗，USR_ID 維持空白
+            }
+        }
+        if (emp["USR_ID"] == "")
+        {
+            return GetEmpNo(a_q);
+        }
+        // Step 3: 有 USR_ID 或 Empid → 去 GetEmpNo 查完整資料
+        if (!string.IsNullOrEmpty(emp["USR_ID"]) || a_q.ContainsKey("Empid"))
+            emp = GetEmpNo(a_q, emp["USR_ID"]);
+
+        return emp;
+    }
+
+    Dictionary<string, string> GetEmpNo(Microsoft.AspNetCore.Http.IQueryCollection a_q, string usrId = "203704")
+    {
+        var emp = new Dictionary<string, string>()
+        {
+            ["OU_ID"] = "",
+            ["OU_NAME"] = "",
+            ["USR_ID"] = "",
+        };
+
+        //return emp;
+
+        string sid = string.Empty;
+        // if (a_q.ContainsKey("sid"))
+        //     sid = "(s.SESSION_ID = '" + a_q["sid"].ToString() + "')";
+        if (!string.IsNullOrEmpty(emp["USR_ID"]))
+        {
+            sid = "(STAFF='" + emp["USR_ID"] + "')";
+        }
+        if (usrId != "")
+        {
+            sid = "(EMPLOYEE.STAFF='" + usrId + "')";
+        }
+        if (a_q.ContainsKey("Empid"))
+            sid = "(EMPLOYEE.STAFF='" + a_q["Empid"] + "')";
+
+        if (sid == string.Empty)
+        {
+            return emp;
+        }
+        string sqlstring = @"
+SELECT
+EMPLOYEE.MANAGER_LEVEL,
+UNIT.OU_ID,
+UNIT.OU_NAME,
+EMPLOYEE.STAFF AS USR_ID,
+EMPLOYEE.NAME,
+DATAEDIT.發明人員編,
+DATAEDIT.資料編輯員編,
+DATAEDIT.發明人單位
+FROM
+chb_pub.dbo.EMPLOYEE
+JOIN CHBSC.dbo.SC_ORG_UNIT AS UNIT ON EMPLOYEE.BRNO = UNIT.OU_ID collate Chinese_Taiwan_Stroke_CI_AS
+LEFT OUTER JOIN iom.dbo.FinTechPatnet_DataEdit AS DATAEDIT ON DATAEDIT.DocNo = '" + ViewBag.docno +
+            "' WHERE" + sid;
+        using (SqlConnection conn = new SqlConnection(Configuration["ConnectionStrings:by"]))
+        {
+            conn.Open();
+            using (SqlCommand command = new SqlCommand(sqlstring, conn))
+            {
+                //empid = (command.ExecuteScalar() == null) ? string.Empty : command.ExecuteScalar().ToString();
+                var r = command.ExecuteReader();
+                string Famin = "N";
+                while (r.Read())
+                {
+                    if (r["發明人員編"].ToString() == r["USR_ID"].ToString() || r["資料編輯員編"].ToString() == r["USR_ID"].ToString())
+                        Famin = "Y"; //起案者、發明人可編輯該案件
+                    if (CheckBM(r["USR_ID"].ToString(), "Fintech_Dep_Mgr") || CheckBM(r["USR_ID"].ToString(), "Fintech_Admin"))
+                    {
+                        if (r["OU_ID"].ToString().PadRight(6, '0') == r["發明人單位"].ToString())
+                            Famin = "Y"; //各處窗口、數金管理人可編輯該處案件
+                    }
+
+                    emp = new Dictionary<string, string>()
+                    {
+                        ["lv"] = r["MANAGER_LEVEL"].ToString(),
+                        ["OU_ID"] = r["OU_ID"].ToString(),
+                        ["OU_NAME"] = r["OU_NAME"].ToString(),
+                        ["USR_ID"] = r["USR_ID"].ToString(),
+                        ["NAME"] = r["NAME"].ToString(),
+                        ["FAMIN"] = Famin
+                    };
+                }
+            }
+            conn.Close();
+        }
+        return emp;
+    }
+
+
+
+    Dictionary<string, string> GettblLog(string a_q)
+    {
+        string empid = string.Empty;
+        var emp = new Dictionary<string, string>();
+
+        string sqlstring = "SELECT TOP (1000) *  FROM [iom].[dbo].[FinTechPatnet_DataEdit]where DocNo = '" + a_q + "'";
+        using (SqlConnection conn = new SqlConnection(Configuration["ConnectionStrings:by"]))
+        {
+            conn.Open();
+            using (SqlCommand command = new SqlCommand(sqlstring, conn))
+            {
+                //empid = (command.ExecuteScalar() == null) ? string.Empty : command.ExecuteScalar().ToString();
+                var r = command.ExecuteReader();
+                while (r.Read())
+                {
+                    emp = new Dictionary<string, string>()
+                    {
+                        ["_issue"] = r["issueFlowStatus"].ToString(),
+                        ["_rd"] = r["rdFlowStatus"].ToString(),
+                        ["_proposal"] = r["proposalFlowStatus"].ToString(),
+                        ["_pay"] = r["payFlowStatus"].ToString(),
+                        ["FlowStatus"] = r["FlowStatus"].ToString(),
+                    };
+                }
+            }
+            conn.Close();
+        }
+        return emp;
+    }
+    void ReadySign(Microsoft.AspNetCore.Http.IFormCollection a_f)
+    {
+        if (log.Count == 0 || log["_issue"].ToString() == "-2")
+            UpdateOrInsert(Request.Form);
+        else if (a_f["hHtml"].ToString().Contains("儲存") || a_f.ContainsKey("rd"))
+            Update(Request.Form);
+        var action = "issue";
+        if (a_f.ContainsKey("rd"))
+        {
+            action = "rd";
+        }
+        else if (a_f.ContainsKey("proposal"))
+        {
+            action = "proposal";
+        }
+        else if (a_f.ContainsKey("rdproposalmerge"))
+        {
+            action = "rdproposalmerge";
+        }
+        else if (a_f.ContainsKey("FlowStatus"))
+        {
+            action = "";
+        }
+        else if (a_f.ContainsKey("pay"))
+        {
+            action = "pay";
+        }
+        var fs = "-2";
+        if (a_f["hHtml"].ToString().Contains("核可"))
+        {
+            if (a_f["hHtml"].ToString().Contains("負責人"))
+            {
+                fs = "1";
+            }
+            else if (a_f["hHtml"].ToString().Contains("主管"))
+            {
+                fs = "2";
+            }
+        }
+        else if (a_f["hHtml"].ToString().Contains("放行"))
+        {
+            if (who["lv"] == "00" || who["lv"] == "05" || who["lv"] == "09")
+            {
+                fs = "3";
+            }
+        }
+        else if (a_f["hHtml"].ToString().Contains("退回"))
+        {
+            if (who["lv"] == "00" || who["lv"] == "05" || who["lv"] == "09")
+            {
+                fs = "-2";
+            }
+        }
+        else if (a_f["hHtml"].ToString().Contains("刪除"))
+        {
+            if (ViewBag.famin == "Y" && log.Count != 0)
+            {
+                if (log["_proposal"] != "3") //提案後不能刪除
+                {
+                    fs = "0";
+                }
+            }
+        }
+        if (action == "issue" && a_f["hHtml"].ToString().Contains("放行") && string.IsNullOrEmpty(ViewBag._approvable))
+        {
+            WriteLiteral("<script>alert('放行成功條件不符合');</script>");
+            return;
+        }
+        if (action == "issue" && (a_f["hHtml"].ToString().Contains("儲存並送負責人核可")) && string.IsNullOrEmpty(ViewBag._approvable))
+        {
+            WriteLiteral("<script>alert('儲存並送負責人核可成功條件不符合');</script>");
+            return;
+        }
+        try
+        {
+            SqlConnection conn = new SqlConnection()
+            {
+                ConnectionString = Configuration["ConnectionStrings:by"]
+            };
+            conn.Open();
+
+            var sqltxt = "";
+            if (action == "rdproposalmerge")
+            {
+                if (fs == "3" && (ViewBag.data[0]["對外公開"] == "N" || (ViewBag.data[0]["對外公開"] == "Y" && ViewBag.data[0]["公開目的"] != "A")))
+                {
+                    sqltxt = "update [iom].[dbo].[FinTechPatnet_DataEdit] set FlowStatus='" + fs + "',rdFlowStatus='" + fs + "',proposalFlowStatus='" + fs + "'  where DocNo='" + ViewBag.docno + "'";
+                }
+                else
+                {
+                    sqltxt = "update [iom].[dbo].[FinTechPatnet_DataEdit] set rdFlowStatus='" + fs + "',proposalFlowStatus='" + fs + "'  where DocNo='" + ViewBag.docno + "'";
+                }
+            }
+            else
+            {
+                sqltxt = "update [iom].[dbo].[FinTechPatnet_DataEdit] set " + action + "FlowStatus='" + fs + "'  where DocNo='" + ViewBag.docno + "'";
+            }
+            if (fs == "0") //刪除FinTechPatnet_DataEdit
+            {
+                sqltxt = "delete [iom].[dbo].[FinTechPatnet_DataEdit] where DocNo='" + ViewBag.docno + "'";
+            }
+            var sqlcmd = new SqlCommand(sqltxt, conn);
+            sqlcmd.ExecuteNonQuery();
+
+            conn.Close();
+
+            if (fs == "0") //刪除tips
+            {
+                SqlConnection con = new SqlConnection()
+                {
+                    ConnectionString = Configuration["ConnectionStrings:bee"]
+                };
+                con.Open();
+                var update = new SqlCommand(" delete [bee].[dbo].[tips] where docno='" + ViewBag.docno + "'", con);
+                var updCount = update.ExecuteNonQuery();
+                con.Close();
+            }
+
+            log = GettblLog(ViewBag.docno);
+            if (log.Count != 0)
+            {
+                mfs = log["_issue"] + log["_rd"] + log["_proposal"] + log["FlowStatus"] + log["_pay"];
+            }
+
+            if (action == "proposal" || action == "" || action == "rdproposalmerge")
+            {
+                SqlConnection conn2 = new SqlConnection()
+                {
+                    ConnectionString = Configuration["ConnectionStrings:by"]
+                };
+                conn.Open();
+
+                var sqlstring = "";
+                if (fs == "3" && action == "proposal")
+                {
+                    sqlstring = "update [iom].[dbo].[FinTechPatnet_DataEdit] set 提案名稱='" + a_f["提案名稱"]
+                    + "',專利所代號='" + (a_f["專利事務所"] == "育晟" ? "2" : (a_f["專利事務所"] == "連邦" ? "1" : ""))
+                    + "',是否落地='" + a_f["應用於本行系統"]
+                    + "',發明人員編='" + a_f["主發明人員編"]
+                    + "',發明人姓名='" + a_f["主發明人姓名"]
+                    + "',其他發明人姓名1='" + a_f["其他發明人1姓名"]
+                    + "',其他發明人姓名2='" + a_f["其他發明人2姓名"]
+                    + "',其他發明人員編='" + a_f["其他發明人1員編"] + (a_f["其他發明人2員編"] == "" ? "" : a_f["其他發明人2員編"])
+                    + "'  where DocNo='" + ViewBag.docno + "'";
+                }
+                else if (fs == "3" && action == "rdproposalmerge" && ViewBag.data[0]["對外公開"] == "Y" && ViewBag.data[0]["公開目的"] == "A")
+                {
+                    sqlstring = "update [iom].[dbo].[FinTechPatnet_DataEdit] set 提案名稱='" + a_f["提案名稱"]
+                    + "',專利所代號='" + (a_f["專利事務所"] == "育晟" ? "2" : (a_f["專利事務所"] == "連邦" ? "1" : ""))
+                    + "',是否落地='" + a_f["應用於本行系統"]
+                    + "',發明人員編='" + a_f["主發明人員編"]
+                    + "',發明人姓名='" + a_f["主發明人姓名"]
+                    + "',其他發明人姓名1='" + a_f["其他發明人1姓名"]
+                    + "',其他發明人姓名2='" + a_f["其他發明人2姓名"]
+                    + "',其他發明人員編='" + a_f["其他發明人1員編"] + (a_f["其他發明人2員編"] == "" ? "" : a_f["其他發明人2員編"])
+                    + "'  where DocNo='" + ViewBag.docno + "'";
+                }
+                else if (fs == "3" && action == "rdproposalmerge" && (ViewBag.data[0]["對外公開"] == "N" || (ViewBag.data[0]["對外公開"] == "Y" && ViewBag.data[0]["公開目的"] != "A")))
+                {
+                    sqlstring = "update [iom].[dbo].[FinTechPatnet_DataEdit] set 專利名稱='" + a_f["專利名稱"]
+                    + "',專利類型='" + (a_f["專利類型"] == "發明" ? "1" : (a_f["專利類型"] == "新型" ? "2" : (a_f["專利類型"] == "設計" ? "3" : "")))
+                    + "',彰銀應用分類='" + a_f["彰銀應用分類"]
+                    + "',公股平台分類='" + a_f["公股平台分類"]
+                    + "',專利說明='" + a_f["專利說明"]
+                    + "',說明書交付日=" + (a_f["說明書交付日"] == "" ? "NULL" : "'" + a_f["說明書交付日"] + "'")
+                    + ",說明書會稿完成日=" + (a_f["說明書會稿完成日"] == "" ? "NULL" : "'" + a_f["說明書會稿完成日"] + "'")
+                    + ",專利申請日=" + (a_f["專利申請日"] == "" ? "NULL" : "'" + a_f["專利申請日"] + "'")
+                    + ",智財局案號='" + a_f["智財局案號"]
+                    + "',審查意見通知函日=" + (a_f["審查意見通知函日初審"] == "" ? "NULL" : "'" + a_f["審查意見通知函日初審"] + "'")
+                    + ",申復意見書交付日=" + (a_f["審查意見分析交付日初審"] == "" ? "NULL" : "'" + a_f["審查意見分析交付日初審"] + "'")
+                    + ",申復書交付日=" + (a_f["申復理由書交付日初審"] == "" ? "NULL" : "'" + a_f["申復理由書交付日初審"] + "'")
+                    + ",申復書會稿完成日=" + (a_f["申復理由書會稿完成日初審"] == "" ? "NULL" : "'" + a_f["申復理由書會稿完成日初審"] + "'")
+                    + ",申復日期=" + (a_f["提出申復日初審"] == "" ? "NULL" : "'" + a_f["提出申復日初審"] + "'")
+                    + ",核駁審定書日=" + (a_f["核駁審定書日初審"] == "" ? "NULL" : "'" + a_f["核駁審定書日初審"] + "'")
+                    + ",再審意見書交付日=" + (a_f["核駁審定分析交付日初審"] == "" ? "NULL" : "'" + a_f["核駁審定分析交付日初審"] + "'")
+                    + ",再審理由書交付日=" + (a_f["再審查理由書交付日"] == "" ? "NULL" : "'" + a_f["再審查理由書交付日"] + "'")
+                    + ",再審理由書會稿完成日=" + (a_f["再審查理由書會稿完成日"] == "" ? "NULL" : "'" + a_f["再審查理由書會稿完成日"] + "'")
+                    + ",再審日期=" + (a_f["提出再審日"] == "" ? "NULL" : "'" + a_f["提出再審日"] + "'")
+                    + ",核准發文日=" + (a_f["核准日"] == "" ? "NULL" : "'" + a_f["核准日"] + "'")
+                    + ",專利證書編號='" + a_f["證書編號"]
+                    + "',專利權起日=" + (a_f["專利權起日"] == "" ? "NULL" : "'" + a_f["專利權起日"] + "'")
+                    + ",專利權迄日=" + (a_f["專利權訖日"] == "" ? "NULL" : "'" + a_f["專利權訖日"] + "'")
+                    + ",證書費繳交完成日=" + (a_f["證書費繳交完成日"] == "" ? "NULL" : "'" + a_f["證書費繳交完成日"] + "'")
+                    + ",公告日=" + (a_f["公告日"] == "" ? "NULL" : "'" + a_f["公告日"] + "'")
+                    + ",年費繳交完成日=" + (a_f["年費繳交完成日"] == "" ? "NULL" : "'" + a_f["年費繳交完成日"] + "'")
+                    + ",放棄答辯日=" + (a_f["放棄答辯日"] == "" ? "NULL" : "'" + a_f["放棄答辯日"] + "'")
+                    + ",專利申請狀態='" + (a_f["證書編號"] == "" ? (a_f["放棄答辯日"] == "" ? "" : "10") : "9")
+                    + "',資料放行日期='" + DateTime.Now.ToString("yyyy-MM-dd")
+                    + "',資料放行員編='" + who["USR_ID"]
+                    + "'  where DocNo='" + ViewBag.docno + "'; "
+                    + "delete [iom].[dbo].[FinTechPatnet_Data] where DocNo='" + ViewBag.docno + "';"
+                    + "insert into [iom].[dbo].[FinTechPatnet_Data] select * from [iom].[dbo].[FinTechPatnet_DataEdit] where DocNo='" + ViewBag.docno + "';";
+                }
+                else if (fs == "3" && action == "")
+                {
+                    sqlstring = "update [iom].[dbo].[FinTechPatnet_DataEdit] set 專利所編號='" + @a_f["事務所案號"]
+                    + "',專利名稱='" + a_f["專利名稱"]
+                    + "',專利類型='" + (a_f["專利類型"] == "發明" ? "1" : (a_f["專利類型"] == "新型" ? "2" : (a_f["專利類型"] == "設計" ? "3" : "")))
+                    + "',彰銀應用分類='" + a_f["彰銀應用分類"]
+                    + "',公股平台分類='" + a_f["公股平台分類"]
+                    + "',專利說明='" + a_f["專利說明"]
+                    + "',說明書交付日=" + (a_f["說明書交付日"] == "" ? "NULL" : "'" + a_f["說明書交付日"] + "'")
+                    + ",說明書會稿完成日=" + (a_f["說明書會稿完成日"] == "" ? "NULL" : "'" + a_f["說明書會稿完成日"] + "'")
+                    + ",專利申請日=" + (a_f["專利申請日"] == "" ? "NULL" : "'" + a_f["專利申請日"] + "'")
+                    + ",智財局案號='" + a_f["智財局案號"]
+                    + "',審查意見通知函日=" + (a_f["審查意見通知函日初審"] == "" ? "NULL" : "'" + a_f["審查意見通知函日初審"] + "'")
+                    + ",申復意見書交付日=" + (a_f["審查意見分析交付日初審"] == "" ? "NULL" : "'" + a_f["審查意見分析交付日初審"] + "'")
+                    + ",申復書交付日=" + (a_f["申復理由書交付日初審"] == "" ? "NULL" : "'" + a_f["申復理由書交付日初審"] + "'")
+                    + ",申復書會稿完成日=" + (a_f["申復理由書會稿完成日初審"] == "" ? "NULL" : "'" + a_f["申復理由書會稿完成日初審"] + "'")
+                    + ",申復日期=" + (a_f["提出申復日初審"] == "" ? "NULL" : "'" + a_f["提出申復日初審"] + "'")
+                    + ",核駁審定書日=" + (a_f["核駁審定書日初審"] == "" ? "NULL" : "'" + a_f["核駁審定書日初審"] + "'")
+                    + ",再審意見書交付日=" + (a_f["核駁審定分析交付日初審"] == "" ? "NULL" : "'" + a_f["核駁審定分析交付日初審"] + "'")
+                    + ",再審理由書交付日=" + (a_f["再審查理由書交付日"] == "" ? "NULL" : "'" + a_f["再審查理由書交付日"] + "'")
+                    + ",再審理由書會稿完成日=" + (a_f["再審查理由書會稿完成日"] == "" ? "NULL" : "'" + a_f["再審查理由書會稿完成日"] + "'")
+                    + ",再審日期=" + (a_f["提出再審日"] == "" ? "NULL" : "'" + a_f["提出再審日"] + "'")
+                    + ",核准發文日=" + (a_f["核准日"] == "" ? "NULL" : "'" + a_f["核准日"] + "'")
+                    + ",專利證書編號='" + a_f["證書編號"]
+                    + "',專利權起日=" + (a_f["專利權起日"] == "" ? "NULL" : "'" + a_f["專利權起日"] + "'")
+                    + ",專利權迄日=" + (a_f["專利權訖日"] == "" ? "NULL" : "'" + a_f["專利權訖日"] + "'")
+                    + ",證書費繳交完成日=" + (a_f["證書費繳交完成日"] == "" ? "NULL" : "'" + a_f["證書費繳交完成日"] + "'")
+                    + ",公告日=" + (a_f["公告日"] == "" ? "NULL" : "'" + a_f["公告日"] + "'")
+                    + ",年費繳交完成日=" + (a_f["年費繳交完成日"] == "" ? "NULL" : "'" + a_f["年費繳交完成日"] + "'")
+                    + ",放棄答辯日=" + (a_f["放棄答辯日"] == "" ? "NULL" : "'" + a_f["放棄答辯日"] + "'")
+                    + ",專利申請狀態='" + (a_f["證書編號"] == "" ? (a_f["放棄答辯日"] == "" ? "" : "10") : "9")
+                    + "',資料放行日期='" + DateTime.Now.ToString("yyyy-MM-dd")
+                    + "',資料放行員編='" + who["USR_ID"]
+                    + "'  where DocNo='" + ViewBag.docno + "'; "
+                    + "delete [iom].[dbo].[FinTechPatnet_Data] where DocNo='" + ViewBag.docno + "';"
+                    + "insert into [iom].[dbo].[FinTechPatnet_Data] select * from [iom].[dbo].[FinTechPatnet_DataEdit] where DocNo='" + ViewBag.docno + "';";
+                }
+                else if (fs == "2" && action == "")
+                {
+                    sqlstring = "update [iom].[dbo].[FinTechPatnet_DataEdit] set 資料審核日期='" + DateTime.Now.ToString("yyyy-MM-dd")
+                    + "',資料審核員編='" + who["USR_ID"]
+                    + "'  where DocNo='" + ViewBag.docno + "'";
+                }
+                else if (fs == "1" && action == "")
+                {
+                    sqlstring = "update [iom].[dbo].[FinTechPatnet_DataEdit] set 資料建立日期='" + DateTime.Now.ToString("yyyy-MM-dd")
+                    // + "',資料編輯員編='" + who["USR_ID"]
+                    + "'  where DocNo='" + ViewBag.docno + "'";
+                }
+                if (sqlstring != "")
+                {
+                    var sqlcmd2 = new SqlCommand(sqlstring, conn);
+                    sqlcmd2.ExecuteNonQuery();
+                }
+                conn2.Close();
+            }
+            if (fs == "3" || fs == "2")
+            {
+                WriteLiteral("<script>alert('放行成功');</script>");
+            }
+            else if (fs == "-2")
+            {
+                WriteLiteral("<script>alert('退回成功'); </script>");
+            }
+        }
+        catch (Exception e)
+        {
+            WriteLiteral("<script>alert('失敗訊息：@e.Message');</script>");
+        }
+    }
+    List<object> Update(Microsoft.AspNetCore.Http.IFormCollection a_f)
+    {
+        var jsonOpt = new JsonSerializerOptions
+        {
+            //WriteIndented = true
+        };
+        var data = new List<object>();
+        var i = 0;
+        foreach (var r in a_f.Keys)
+        {
+            //if (r.Contains("id"))
+            {
+                data.Add(new Dictionary<string, string>
+                {
+                    [r] = a_f[r],
+                });
+                ++i;
+            }
+        }
+        foreach (var r in a_f.Files)
+        {
+            //if (r.Contains("id"))
+            {
+                var fn = r.Name;
+                fn = filename(r.Name);
+                data.Add(new Dictionary<string, string>
+                {
+                    [r.Name] = ViewBag.docno + fn + System.IO.Path.GetExtension(r.FileName),
+                });
+                ++i;
+            }
+        }
+        var json = JsonSerializer.Serialize(data, jsonOpt);
+        try
+        {
+            SqlConnection con = new SqlConnection()
+            {
+                ConnectionString = Configuration["ConnectionStrings:bee"]
+            };
+            con.Open();
+            if (Request.ContentLength > 0)
+            {
+                var update = new SqlCommand(" update [bee].[dbo].[tips] set rd='" + json + "' where docno='" + ViewBag.docno + "'", con);
+                var updCount = update.ExecuteNonQuery();
+
+            }
+            con.Close();
+
+            var action = "issue";
+            if (a_f.ContainsKey("rd"))
+            {
+                action = "rd";
+            }
+            else if (a_f.ContainsKey("proposal"))
+            {
+                action = "proposal";
+            }
+            else if (a_f.ContainsKey("rdproposalmerge"))
+            {
+                action = "rdproposalmerge";
+            }
+            else if (a_f.ContainsKey("FlowStatus"))
+            {
+                //更新FinTechPatnet_DataEdit事務所案號 => 專利所編號依照申請人帶入， 20241231 by 196099
+                if (a_f.ContainsKey("事務所案號"))
+                {
+                    var no = string.IsNullOrEmpty(a_f["事務所案號"]) ? ViewBag.DocNo : a_f["事務所案號"];
+                    UpdateFinTechPatnet_DataEdit(no);
+                }
+                action = "";
+            }
+            else if (a_f.ContainsKey("pay"))
+            {
+                action = "pay";
+            }
+
+            SqlConnection conn = new SqlConnection()
+            {
+                ConnectionString = Configuration["ConnectionStrings:by"]
+            };
+            conn.Open();
+
+            if (a_f["hHtml"].ToString().Contains("核可") || a_f["hHtml"].ToString().Contains("放行"))
+            { }
+            else
+            {
+                string strSqlcmd = "";
+                if (action == "rdproposalmerge")
+                {
+                    strSqlcmd = "update [iom].[dbo].[FinTechPatnet_DataEdit] set rdFlowStatus='" + -2 + "',proposalFlowStatus='" + -2 + "'  where DocNo='" + ViewBag.docno + "'";
+                }
+                else
+                {
+                    strSqlcmd = "update [iom].[dbo].[FinTechPatnet_DataEdit] set " + action + "FlowStatus='" + -2 + "'  where DocNo='" + ViewBag.docno + "'";
+                }
+                var sqlcmd = new SqlCommand(strSqlcmd, conn);
+                sqlcmd.ExecuteNonQuery();
+            }
+
+            conn.Close();
+            log = GettblLog(ViewBag.docno);
+            if (log.Count != 0)
+            {
+                mfs = log["_issue"] + log["_rd"] + log["_proposal"] + log["FlowStatus"] + log["_pay"];
+            }
+        }
+        catch (Exception)
+        {
+        }
+
+        var dSysTextJson = JsonSerializer.Deserialize<List<object>>(json);
+        return dSysTextJson;
+    }
+    List<object> UpdateOrInsert(Microsoft.AspNetCore.Http.IFormCollection a_f)
+    {
+        var jsonOpt = new JsonSerializerOptions
+        {
+            //WriteIndented = true
+        };
+        var data = new List<object>();
+        var i = 0;
+        foreach (var r in a_f.Keys)
+        {
+            //if (r.Contains("id"))
+            {
+                data.Add(new Dictionary<string, string>
+                {
+                    [r] = a_f[r],
+                });
+                ++i;
+            }
+        }
+        foreach (var r in a_f.Files)
+        {
+            //if (r.Contains("id"))
+            {
+                var fn = r.Name;
+                fn = filename(r.Name);
+                data.Add(new Dictionary<string, string>
+                {
+                    [r.Name] = ViewBag.docno + fn + System.IO.Path.GetExtension(r.FileName),
+                });
+                ++i;
+            }
+        }
+        var json = JsonSerializer.Serialize(data, jsonOpt);
+        try
+        {
+            SqlConnection con = new SqlConnection()
+            {
+                ConnectionString = Configuration["ConnectionStrings:bee"]
+            };
+            con.Open();
+            if (Request.ContentLength > 0)
+            {
+                var update = new SqlCommand(" update [bee].[dbo].[tips] set rd='" + json + "' where docno='" + ViewBag.docno + "'", con);
+                var updCount = update.ExecuteNonQuery();
+                if (updCount == 0)
+                {
+                    var insert = new SqlCommand("insert into[bee].[dbo].[tips](docno,rd) values('" + ViewBag.docno + "','" + json + "')", con);
+                    var rowCount = insert.ExecuteNonQuery();
+                }
+            }
+            con.Close();
+
+            SqlConnection conn = new SqlConnection()
+            {
+                ConnectionString = Configuration["ConnectionStrings:by"]
+            };
+            conn.Open();
+            //var sql = "  delete [iom].[dbo].[FinTechPatnet_DataEdit]where 專利所代號=' ' and	專利所編號='" + ViewBag.docno + "' and	發明人員編='" + ViewBag.uid + "';  insert into[iom].[dbo].[FinTechPatnet_DataEdit](專利所代號,	專利所編號,	發明人員編,[發明人單位],issueFlowStatus)  values(' ',	'" + ViewBag.docno + "',	'" + ViewBag.uid + "','" + ViewBag.ubrno + "','" + -2 + "')"
+            var sqlcmd = new SqlCommand("delete [iom].[dbo].[FinTechPatnet_DataEdit] where 專利所代號=' ' and DocNo='" + ViewBag.docno + "' and	發明人員編='" + ViewBag.uid + "';  insert into[iom].[dbo].[FinTechPatnet_DataEdit](DocNo, 專利所代號, 專利所編號, 發明人員編,[發明人單位],issueFlowStatus, 資料編輯員編)  values('" + ViewBag.docno + "',' ', '" + ViewBag.docno + "', '" + ViewBag.uid + "','" + ViewBag.ubrno + "','" + -2 + "', '" + ViewBag.uid + "')", conn);
+            sqlcmd.ExecuteNonQuery();
+
+            conn.Close();
+            log = GettblLog(ViewBag.docno);
+            if (log.Count != 0)
+            {
+                mfs = log["_issue"] + log["_rd"] + log["_proposal"] + log["FlowStatus"] + log["_pay"];
+            }
+        }
+        catch (Exception e)
+        {
+            Html.Raw(e.Message);
+        }
+
+        var dSysTextJson = JsonSerializer.Deserialize<List<object>>(json);
+        return dSysTextJson;
+    }
+    List<Dictionary<string, string>> getData()
+    {
+        var data = new List<object>();
+        var docno = Request.Query.ContainsKey("docno") ? Request.Query["docno"].ToString() : DateTime.Now.ToString("yyyyMMdd") + who["OU_ID"] + who["USR_ID"];
+        data.Add(new
+        {
+            提案序號 = docno,
+            ID = who["USR_ID"],
+            NAME = who["NAME"],
+            限繳日期 = "",
+            發想說明 = "",
+            紀錄人 = "",
+            紀錄人2 = "",
+            紀錄人3 = "",
+            紀錄時間 = "",
+            紀錄時間2 = "",
+            紀錄時間3 = "",
+            研發說明 = "",
+            研發說明2 = "",
+            研發說明3 = "",
+            研發說明筆數 = "1",
+            提案名稱 = "",
+            專利事務所 = "",
+            應用於本行系統 = "",
+            符合申請效益 = "",
+            符合申請效益說明 = "",
+            申請專利 = "",
+            申請專利說明 = "",
+            主發明人姓名 = "",
+            主發明人員編 = "",
+            其他發明人1姓名 = "",
+            其他發明人1員編 = "",
+            其他發明人2姓名 = "",
+            其他發明人2員編 = "",
+            公開研究成果 = "",
+            公開用途 = "",
+            公開用途說明 = "",
+            事務所案號 = "",
+            專利名稱 = "",
+            專利類型 = "",
+            彰銀應用分類 = "",
+            公股平台分類 = "",
+            專利說明 = "",
+            說明書交付日 = "",
+            說明書會稿完成日 = "",
+            專利申請日 = "",
+            智財局案號 = "",
+            審查意見通知函日初審 = "",
+            審查意見通知函日再審 = "",
+            審查意見分析交付日初審 = "",
+            審查意見分析交付日再審 = "",
+            審查意見分析會稿完成日初審 = "",
+            審查意見分析會稿完成日再審 = "",
+            答辯 = "",
+            放棄答辯日 = "",
+            放棄答辯原因 = "",
+            申復理由書交付日初審 = "",
+            申復理由書交付日再審 = "",
+            申復理由書會稿完成日初審 = "",
+            申復理由書會稿完成日再審 = "",
+            提出申復日初審 = "",
+            提出申復日再審 = "",
+            核駁審定書日初審 = "",
+            核駁審定書日再審 = "",
+            核駁審定分析交付日初審 = "",
+            核駁審定分析交付日再審 = "",
+            核駁審定分析會稿完成日初審 = "",
+            核駁審定分析會稿完成日再審 = "",
+            再審 = "",
+            放棄再審日 = "",
+            放棄再審原因 = "",
+            再審查理由書交付日 = "",
+            再審查理由書會稿完成日 = "",
+            提出再審日 = "",
+            核准日 = "",
+            證書編號 = "",
+            專利權起日 = "",
+            專利權訖日 = "",
+            公告日 = "",
+            證書費繳交完成日 = "",
+            年費繳交完成日 = "",
+            續存評估 = "",
+            續存評估說明 = "",
+            繳納日期 = "",
+            重大研發成本案件 = "",
+            重大研發成本案件說明 = "",
+            全新技術 = "",
+            全新技術說明 = "",
+            專利證書狀態 = "",
+            定稿說明書 = string.Empty,
+            專利說明書N校稿意見 = string.Empty,
+            研發前檢索 = string.Empty,
+            研發前檢索檔 = string.Empty,
+            提案構想書等研發紀錄 = string.Empty,
+            提案揭露書 = string.Empty,
+            提案第X次補充資料 = string.Empty,
+            其他補充文件 = string.Empty,
+            審查意見分析會稿初審 = string.Empty,
+            審查意見分析會稿再審 = string.Empty,
+            申復理由書會稿初審 = string.Empty,
+            初審第X次審查意見申復理由N校稿意見 = string.Empty,
+            新型申復理由N校稿意見 = string.Empty,
+            新型修正說明書劃線版N校稿意見 = string.Empty,
+            申復理由書會稿再審 = string.Empty,
+            初審第X次審查意見修正專利說明書劃線版N校稿意見 = string.Empty,
+            再審第X次審查意見修正專利說明書劃線版N校稿意見 = string.Empty,
+            核駁審定分析初審 = string.Empty,
+            核駁審定分析再審 = string.Empty,
+            再審查理由書 = string.Empty,
+            再審查修正專利說明書劃線版N校稿意見 = string.Empty,
+            專利證書影本收據 = string.Empty,
+            用印證書申請書 = string.Empty,
+            證書費年費繳交收據 = string.Empty,
+            可專利要件 = string.Empty,
+            有侵權疑慮仍要繼續研發 = string.Empty,
+            評估及研擬相關措施 = string.Empty,
+            迴避設計評估報告 = string.Empty,
+            研發前檢索檔取得時間 = string.Empty,
+            迴避設計評估報告取得時間 = string.Empty,
+            提案構想書等研發紀錄取得時間 = string.Empty,
+            提案揭露書取得時間 = string.Empty,
+            其他補充文件取得時間 = string.Empty,
+            定稿說明書取得時間 = string.Empty,
+            審查意見分析會稿初審取得時間 = string.Empty,
+            初審第X次審查意見分析N校稿意見 = string.Empty,
+            再審第X次審查意見分析N校稿意見 = string.Empty,
+            初審核駁審定分析N校稿意見 = string.Empty,
+            再審核駁審定分析N校稿意見 = string.Empty,
+            再審查理由書N校稿意見 = string.Empty,
+            審查意見分析會稿再審取得時間 = string.Empty,
+            申復理由書會稿初審取得時間 = string.Empty,
+            申復理由書會稿再審取得時間 = string.Empty,
+            核駁審定分析初審取得時間 = string.Empty,
+            核駁審定分析再審取得時間 = string.Empty,
+            圖示N校稿意見 = string.Empty,
+            再審查理由書取得時間 = string.Empty,
+            證書費年費繳交收據取得時間 = string.Empty,
+            專利證書影本收據取得時間 = string.Empty,
+            對外公開 = string.Empty,
+            公開目的 = string.Empty,
+            公開目的說明 = string.Empty,
+            公開對象 = string.Empty,
+            公開對象說明 = string.Empty,
+            已簽訂保密條款 = string.Empty,
+            相關前案_附檢索結果 = string.Empty,
+            公開考量事項說明 = string.Empty,
+            公開內容說明 = string.Empty,
+            公開內容 = string.Empty,
+            公開內容取得時間 = string.Empty,
+            相關前案檢索報告 = string.Empty,
+            相關前案檢索報告取得時間 = string.Empty,
+            前案檢索報告 = string.Empty,
+        });
+        var json = JsonSerializer.Serialize(data);
+        return JsonSerializer.Deserialize<List<Dictionary<string, string>>>(json);
+    }
+    List<Dictionary<string, string>> select(Dictionary<string, string> a_q)
+    {
+        var data = new List<Dictionary<string, string>>();
+        try
+        {
+
+            SqlConnection con = new SqlConnection()
+            {
+                ConnectionString = Configuration["ConnectionStrings:bee"]
+            };
+            con.Open();
+            var json = string.Empty;
+            //if (Request.Query.Count > 0)
+            {
+                var insert = new SqlCommand("SELECT TOP (1000) [docno], [rd] as data FROM [bee].[dbo].[tips]where[docno]='" + ViewBag.docno + "'", con);
+                var reader = insert.ExecuteReader();
+
+                while (reader.Read())
+                {
+                    json = reader["data"].ToString();
+                }
+                reader.Close();
+            }
+            con.Close();
+            if (string.IsNullOrEmpty(json) == false)
+            {
+                data = JsonSerializer.Deserialize<List<Dictionary<string, string>>>(json);
+            }
+        }
+        catch (Exception)
+        {
+        }
+        return data;
+    }
+    void upDoc(Microsoft.AspNetCore.Http.IFormFile files, NetworkCredential _nc, string a_url)
+    {
+        var fn = files.Name;
+        fn = filename(files.Name);
+        fn = ViewBag.docno + fn + System.IO.Path.GetExtension(files.FileName);
+        a_url = a_url + ViewBag.docno + "/";
+
+        try
+        {
+            var request1 = (FtpWebRequest)WebRequest.Create(a_url);
+            request1.Method = WebRequestMethods.Ftp.MakeDirectory;
+            request1.Credentials = _nc;
+            using (var resp = (FtpWebResponse)request1.GetResponse())
+            {
+                //WriteLiteral("<script>alert('新增目錄：" + a_url + "');</script>");
+            }
+        }
+        catch (Exception)
+        {
+        }
+        try
+        {
+            var request2 = (FtpWebRequest)WebRequest.Create(a_url + fn);
+            request2.Method = WebRequestMethods.Ftp.UploadFile;
+            request2.Credentials = _nc;
+            //request.RequestUri.AbsoluteUri.Split('/')[2]
+
+            using (System.IO.Stream requestStream = request2.GetRequestStream())
+            {
+                files.CopyTo(requestStream);
+            }
+        }
+        catch (Exception e)
+        {
+            WriteLiteral("<script>alert('upDoc上傳失敗：" + e.Message + "');</script>");
+        }
+    }
+    void FileUpload(Microsoft.AspNetCore.Http.IFormFile files, string a_url)
+    {
+        var fn = files.Name;
+        fn = filename(files.Name);
+        fn = ViewBag.docno + fn + System.IO.Path.GetExtension(files.FileName);
+        //a_url = a_url + ViewBag.docno + "/";
+
+        if (files == null || files.Length == 0)
+            throw new Exception("file should not be null");
+        try
+        {
+            System.IO.Directory.CreateDirectory(a_url);
+        }
+        catch (Exception)
+        {
+        }
+
+        try
+        {
+            using (var fileStream = System.IO.File.Create(a_url + fn))
+            {
+                files.CopyTo(fileStream);
+            }
+        }
+        catch (Exception ex)
+        {
+            WriteLiteral("<script>alert('FileUpload上傳失敗：" + ex.Message + "');</script>");
+        }
+
+    }
+
+    bool toFES(Microsoft.AspNetCore.Http.IFormCollection a_f)
+    {
+        bool success = true;
+        var a_url = feschb01;
+        if (a_f.ContainsKey("專利事務所"))
+        {
+            string a_p = a_f["專利事務所"].ToString();
+            if (a_p == "育晟")
+                a_url = fesp01;
+            else if (a_p == "連邦")
+                a_url = fesnp01;
+        }
+        a_url = a_url + ViewBag.docno + "/";
+        string folder = truepath;
+        NetworkCredential _nc = fes;
+        try
+        {
+            var request1 = (FtpWebRequest)WebRequest.Create(a_url);
+            request1.Method = WebRequestMethods.Ftp.MakeDirectory;
+            request1.Credentials = _nc;
+            using (var resp = (FtpWebResponse)request1.GetResponse())
+            {
+                //WriteLiteral("<script>alert('新增目錄：" + a_url + "');</script>");
+            }
+        }
+        catch (Exception)
+        {
+            // WriteLiteral("<script>alert('toFES新增目錄失敗，路徑：" + a_url + " 錯誤訊息：" + e.Message + "');</script>");
+            // return;
+        }
+        WebClient client = new WebClient();
+        client.Credentials = _nc;
+        foreach (string fname in System.IO.Directory.GetFiles(folder))
+        {
+            var fnamearray = fname.Split("\\");
+            var fnametrue = fnamearray[fnamearray.Length - 1];
+            try
+            {
+                client.UploadFile(a_url + fnametrue, fname);
+            }
+            catch (Exception e)
+            {
+                success = false;
+                WriteLiteral("<script>alert('toFES上傳失敗，folder：" + folder + "，a_url：" + a_url + "，fnametrue：" + fnametrue + " 錯誤訊息：" + e.Message + "');</script>");
+                return success;
+            }
+        }
+        return success;
+    }
+
+    string filename(string filesname)
+    {
+        var fn = filesname;
+        switch (filesname)
+        {
+            //發想
+            case "研發前檢索檔": fn = "A02000"; break;
+            case "迴避設計評估報告": fn = "A10000"; break;
+            //研發
+            case "提案構想書等研發紀錄": fn = "A08000"; break;
+            //提案
+            case "提案揭露書": fn = "A01000"; break;
+            case "提案第X次補充資料": fn = "A0300X"; break;
+            case "其他補充文件": fn = "A09000"; break;
+            //申請
+            case "專利說明書N校稿意見": fn = "A0600N"; break;
+            case "定稿說明書": fn = "A0700"; break;
+            case "初審第X次審查意見分析N校稿意見": fn = "C050XN"; break;
+            case "初審第X次審查意見申復理由N校稿意見": fn = "C080XN"; break;
+            case "申復理由書會稿初審": fn = "C09011"; break;
+            case "審查意見分析會稿初審": fn = "C13011"; break;
+            case "再審第X次審查意見修正專利說明書劃線版N校稿意見": fn = "D130XN"; break;
+            case "再審查理由書N校稿意見": fn = "D0300N"; break;
+            case "初審第X次審查意見修正專利說明書劃線版N校稿意見": fn = "C090XN"; break;
+            case "再審查理由書": fn = "D03001"; break;//D04001
+            case "再審查修正專利說明書劃線版N校稿意見": fn = "D0400N"; break;
+            case "初審核駁審定分析N校稿意見": fn = "C1300N"; break;
+            case "再審核駁審定分析N校稿意見": fn = "D1700N"; break;
+            case "圖示N校稿意見": fn = "A0700N"; break;
+            case "再審第X次審查意見分析N校稿意見": fn = "D090XN"; break;
+            case "申復理由書會稿再審": fn = "D120XN"; break;
+            case "再審第X次審查意見申復理由N校稿意見": fn = "D13011"; break;
+            case "核駁審定分析再審": fn = "D17001"; break;
+            case "審查意見分析會稿再審": fn = "D17011"; break;
+            case "核駁審定分析初審":
+                {
+                    if (Request.Form["專利類型"] == "新型")
+                        fn = "E04001";//E05001
+                    else
+                        fn = "C13001";
+                }
+                ; break;
+            case "新型申復理由N校稿意見": fn = "E0400N"; break;
+            case "新型修正說明書劃線版N校稿意見": fn = "E0500N"; break;
+            case "用印證書申請書": fn = "F04000"; break;
+            case "證書費年費繳交收據": fn = "F06000"; break;
+            case "專利證書影本收據": fn = "F07000"; break;
+            case "相關前案檢索報告": fn = "A11000"; break;
+            case "公開內容": fn = "A12000"; break;
+            default: break;
+        }
+        return fn;
+    }
+
+    string docnogen(string yymm, string brno, string hasdocno)
+    {
+        string docno0 = yymm + brno + "01";
+        string olddocno = yymm + brno + "00";
+        try
+        {
+            SqlConnection con = new SqlConnection()
+            {
+                ConnectionString = Configuration["ConnectionStrings:bee"]
+            };
+            con.Open();
+            // var json = string.Empty;
+            //if (Request.Query.Count > 0)
+            {
+                var insert = new SqlCommand("select max(docno) as docno from bee.dbo.tips where docno like @docno", con);
+                insert.Parameters.Add(new SqlParameter("docno", yymm + brno + "%"));
+                var reader = insert.ExecuteReader();
+
+                if (reader.HasRows)
+                {
+                    DataTable result = new DataTable();
+                    result.Load(reader);
+                    if (result.Rows.Count > 0)
+                    {
+                        olddocno = result.Rows[0][0].ToString();
+                    }
+                }
+                reader.Close();
+            }
+            con.Close();
+        }
+        catch (Exception)
+        {
+        }
+        if (string.Compare(olddocno, docno0) != -1)
+        {
+            int DocNoNo = Convert.ToInt32(olddocno.Substring(olddocno.Length - 2, 2)) + 1;
+            if (hasdocno == "1")
+            {
+                docno0 = olddocno;
+            }
+            else
+            {
+                docno0 = yymm + brno + DocNoNo.ToString("00");
+            }
+        }
+        return docno0;
+    }
+    bool checkError()
+    {
+        bool error = false;
+        if (log.Count != 0)
+        {
+            if (log["_issue"] == "-2" && error == false)
+            {
+                error = checkField("研發前檢索", error, Request.Form);
+                error = checkField("重大研發成本案件", error, Request.Form);
+                error = checkField("全新技術", error, Request.Form);
+                error = checkField("有侵權疑慮仍要繼續研發", error, Request.Form);
+                if (Request.Form["重大研發成本案件"].ToString() == "N" || Request.Form["全新技術"].ToString() == "N")
+                {
+                    if (Request.Form["研發前檢索"].ToString() != "N" && error == false)
+                    {
+                        error = true;
+
+                        WriteLiteral("<script>alert('送出失敗：重大研發成本案件或全新技術為否時，「研發前檢索」欄位必為否');</script>");
+                    }
+                }
+                if (Request.Form["重大研發成本案件"].ToString() == "Y" && Request.Form["全新技術"].ToString() == "Y" && Request.Form["研發前檢索"].ToString() == "N" && error == false)
+                {
+                    error = true;
+                    WriteLiteral("<script>alert('送出失敗：重大研發成本案件及全新技術為是時，「研發前檢索」欄位必為是');</script>");
+                }
+                if (Request.Form["有侵權疑慮仍要繼續研發"].ToString() == "Y" && Request.Form["評估及研擬相關措施"].ToString() == "")
+                {
+                    error = true;
+                    WriteLiteral("<script>alert('送出失敗：有侵權疑慮仍要繼續研發為是時，「評估及研擬相關措施」欄位必為是');</script>");
+                }
+            }
+            if ((log["_issue"] == "1" || log["_issue"] == "-2") && error == false)
+            {
+                var fname = new List<string>() { Request.Form["研發前檢索檔"].ToString(), Request.Form["迴避設計評估報告"].ToString() };
+                var fGetTime = new List<string>() { Request.Form["研發前檢索檔取得時間"].ToString(), Request.Form["迴避設計評估報告取得時間"].ToString() };
+                for (var f = 0; f < fname.Count; f++)
+                {
+                    if (!string.IsNullOrEmpty(fname[f]) && string.IsNullOrEmpty(fGetTime[f]))
+                    {
+                        error = true;
+                        WriteLiteral("<script>alert('放行失敗請完成文件取得日期之填寫');</script>");
+                    }
+                }
+            }
+            if (log["_issue"] == "3" && error == false)
+            {
+                error = checkField("紀錄人", error, Request.Form);
+                error = checkField("紀錄時間", error, Request.Form);
+                error = checkField("研發說明", error, Request.Form);
+                error = checkField("提案構想書等研發紀錄", error, Request.Form);
+                if (Request.Form["研發說明筆數"] == "2" || Request.Form["研發說明筆數"] == "3")
+                {
+                    error = checkField("紀錄人2", error, Request.Form);
+                    error = checkField("紀錄時間2", error, Request.Form);
+                    error = checkField("研發說明2", error, Request.Form);
+                }
+                if (Request.Form["研發說明筆數"] == "3")
+                {
+                    error = checkField("紀錄人3", error, Request.Form);
+                    error = checkField("紀錄時間3", error, Request.Form);
+                    error = checkField("研發說明3", error, Request.Form);
+                }
+                if (ViewBag.ver == "1") //新版研發跟提案合併
+                {
+                    if (log["_rd"] == "-2" && log["_proposal"] == "-2" && error == false)//研發及提案階段經辦簽核判斷
+                    {
+                        //研發判斷
+                        if (!string.IsNullOrEmpty(Request.Form["提案構想書等研發紀錄"].ToString()) && error == false)
+                        {
+                            var fname_rd = new List<string>() { Request.Form["提案構想書等研發紀錄"].ToString() };
+                            var fGetTime_rd = new List<string>() { Request.Form["提案構想書等研發紀錄取得時間"].ToString() };
+                            for (var f = 0; f < fname_rd.Count; f++)
+                            {
+                                if (!string.IsNullOrEmpty(fname_rd[f]) && string.IsNullOrEmpty(fGetTime_rd[f]))
+                                {
+                                    error = true;
+                                    WriteLiteral("<script>alert('放行失敗：請退回經辦修改，以完成文件取得日期之填寫');</script>");
+                                }
+                            }
+                        }
+                        //對外公開選「是」且公開目的為「專利申請」，始顯示提案階段相關欄位，直屬負責人及單位主管放行，進入申請階段
+                        if (!string.IsNullOrEmpty(Request.Form["對外公開"].ToString()) && Request.Form["對外公開"].ToString() == "Y" && error == false)
+                        {
+                            //研發判斷
+                            error = checkField("公開目的", error, Request.Form);
+                            error = checkField("公開對象", error, Request.Form);
+                            error = checkField("已簽訂保密條款", error, Request.Form);
+                            error = checkField("相關前案_附檢索結果", error, Request.Form);
+                            if (Request.Form["相關前案_附檢索結果"].ToString() == "Y" && error == false)
+                            {
+                                error = checkField("相關前案檢索報告", error, Request.Form);
+                                error = checkField("相關前案檢索報告取得時間", error, Request.Form);
+                            }
+                            error = checkField("公開考量事項說明", error, Request.Form);
+                            error = checkField("公開內容說明", error, Request.Form);
+                            error = checkField("公開內容", error, Request.Form);
+                            error = checkField("公開內容取得時間", error, Request.Form);
+
+                            if (!string.IsNullOrEmpty(Request.Form["公開目的"].ToString()) && Request.Form["公開目的"].ToString() == "A" && error == false)
+                            {
+                                //提案判斷
+                                error = checkField("提案名稱", error, Request.Form);
+                                error = checkField("專利事務所", error, Request.Form);
+                                error = checkField("應用於本行系統", error, Request.Form);
+                                error = checkField("符合申請效益", error, Request.Form);
+                                error = checkField("申請專利", error, Request.Form);
+                                error = checkField("主發明人姓名", error, Request.Form);
+                                error = checkField("主發明人員編", error, Request.Form);
+                                error = checkField("提案揭露書", error, Request.Form);
+                                if (Request.Form["符合申請效益"].ToString() == "N" && Request.Form["申請專利"].ToString() != "N" && error == false)
+                                {
+                                    error = true;
+                                    WriteLiteral("<script>alert('送出失敗：符合申請效益為否時，「申請專利」欄位必為否');</script>");
+                                }
+                                if (Request.Form["符合申請效益"].ToString() == "Y" && string.IsNullOrEmpty(Request.Form["符合申請效益說明"].ToString()))
+                                {
+                                    error = true;
+                                    WriteLiteral("<script>alert('送出失敗：符合申請效益為是時，「符合申請效益說明」欄位必填');</script>");
+                                }
+
+                                var fname_proposal = new List<string>() { Request.Form["提案揭露書"].ToString(), Request.Form["其他補充文件"].ToString() };
+                                var fGetTime_proposal = new List<string>() { Request.Form["提案揭露書取得時間"].ToString(), Request.Form["其他補充文件取得時間"].ToString() };
+                                for (var f = 0; f < fname_proposal.Count; f++)
+                                {
+                                    if (!string.IsNullOrEmpty(fname_proposal[f]) && string.IsNullOrEmpty(fGetTime_proposal[f]))
+                                    {
+                                        error = true;
+                                        WriteLiteral("<script>alert('放行失敗：請退回經辦修改，以完成文件取得日期之填寫');</script>");
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    if (log["_rd"] == "3" && log["_proposal"] == "3" && error == false) //判斷要不要出現申請階段
+                    {
+                        //對外公開選「是」且公開目的為「專利申請」，始顯示提案階段相關欄位，直屬負責人及單位主管放行，進入申請階段
+                        if (!string.IsNullOrEmpty(Request.Form["對外公開"].ToString()) && Request.Form["對外公開"].ToString() == "Y" &&
+                        !string.IsNullOrEmpty(Request.Form["公開目的"].ToString()) && Request.Form["公開目的"].ToString() == "A" && error == false)
+                        {
+                            //申請階段判斷的資料
+                            error = checkField("事務所案號", error, Request.Form);
+                            error = checkField("專利名稱", error, Request.Form);
+                            error = checkField("專利類型", error, Request.Form);
+                            error = checkField("彰銀應用分類", error, Request.Form);
+                            error = checkField("公股平台分類", error, Request.Form);
+                            error = checkField("專利說明", error, Request.Form);
+                            error = checkField("說明書交付日", error, Request.Form);
+                            error = checkField("說明書會稿完成日", error, Request.Form);
+                            error = checkField("專利申請日", error, Request.Form);
+                            error = checkField("智財局案號", error, Request.Form);
+                            if (!string.IsNullOrEmpty(Request.Form["核准日"].ToString()) && error == false)
+                            {
+                                error = checkField("證書編號", error, Request.Form);
+                                error = checkField("專利證書狀態", error, Request.Form);
+                                error = checkField("專利權起日", error, Request.Form);
+                                error = checkField("專利權訖日", error, Request.Form);
+                                error = checkField("公告日", error, Request.Form);
+                                error = checkField("證書費繳交完成日", error, Request.Form);
+                                error = checkField("專利證書影本收據", error, Request.Form);
+                            }
+                            if (log["FlowStatus"] == "1" && error == false)
+                            {
+                                var fname = new List<string>() { Request.Form["定稿說明書"].ToString(), Request.Form["審查意見分析會稿初審"].ToString(), Request.Form["審查意見分析會稿再審"].ToString(), Request.Form["申復理由書會稿初審"].ToString(), Request.Form["申復理由書會稿再審"].ToString(), Request.Form["核駁審定分析初審"].ToString(), Request.Form["核駁審定分析再審"].ToString(), Request.Form["再審查理由書"].ToString(), Request.Form["證書費年費繳交收據"].ToString(), Request.Form["專利證書影本收據"].ToString() };
+                                var fGetTime = new List<string>() { Request.Form["定稿說明書取得時間"].ToString(), Request.Form["審查意見分析會稿初審取得時間"].ToString(), Request.Form["審查意見分析會稿再審取得時間"].ToString(), Request.Form["申復理由書會稿初審取得時間"].ToString(), Request.Form["申復理由書會稿再審取得時間"].ToString(), Request.Form["核駁審定分析初審取得時間"].ToString(), Request.Form["核駁審定分析再審取得時間"].ToString(), Request.Form["再審查理由書取得時間"].ToString(), Request.Form["證書費年費繳交收據取得時間"].ToString(), Request.Form["專利證書影本收據取得時間"].ToString() };
+                                for (var f = 0; f < fname.Count; f++)
+                                {
+                                    if (!string.IsNullOrEmpty(fname[f]) && string.IsNullOrEmpty(fGetTime[f]))
+                                    {
+                                        error = true;
+                                        WriteLiteral("<script>alert('放行失敗：請退回經辦修改，以完成文件取得日期之填寫');</script>");
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                else //舊版研發跟提案分開
+                {
+                    if (log["_issue"] == "3" && log["_rd"] == "1" && error == false)
+                    {
+                        error = checkField("公開研究成果", error, Request.Form);
+                        if (Request.Form["公開研究成果"].ToString() == "Y" && string.IsNullOrEmpty(Request.Form["公開用途"]) && error == false)
+                        {
+                            error = true;
+                            WriteLiteral("<script>alert('送出失敗：公開研究成果點選「是」時，「公開用途」欄位必填');</script>");
+                        }
+                        else if (Request.Form["公開研究成果"].ToString() == "N" && !string.IsNullOrEmpty(Request.Form["公開用途"]) && error == false)
+                        {
+                            error = true;
+                            WriteLiteral("<script>alert('送出失敗：公開研究成果點選「否」時，「公開用途」欄位不可填寫');</script>");
+                        }
+                        if (Request.Form["公開用途"].ToString() == "Y" && error == false)
+                        {
+                            error = checkField("公開用途說明", error, Request.Form);
+                        }
+                        else if (Request.Form["公開用途"].ToString() == "N" && Request.Form["公開用途說明"].ToString() != "" && error == false)
+                        {
+                            error = true;
+                            WriteLiteral("<script>alert('送出失敗：公開用途點選「供事務所申請專利用」時，「公開用途說明」欄位不可填寫');</script>");
+                        }
+                        else if (!string.IsNullOrEmpty(Request.Form["提案構想書等研發紀錄"].ToString()) && error == false)
+                        {
+                            var fname = new List<string>() { Request.Form["提案構想書等研發紀錄"].ToString() };
+                            var fGetTime = new List<string>() { Request.Form["提案構想書等研發紀錄取得時間"].ToString() };
+                            for (var f = 0; f < fname.Count; f++)
+                            {
+                                if (!string.IsNullOrEmpty(fname[f]) && string.IsNullOrEmpty(fGetTime[f]))
+                                {
+                                    error = true;
+                                    WriteLiteral("<script>alert('放行失敗：請退回經辦修改，以完成文件取得日期之填寫');</script>");
+                                }
+                            }
+                        }
+                    }
+                    if (log["_rd"] == "3" && error == false)
+                    {
+                        error = checkField("專利事務所", error, Request.Form);
+                        error = checkField("應用於本行系統", error, Request.Form);
+                        error = checkField("符合申請效益", error, Request.Form);
+                        error = checkField("申請專利", error, Request.Form);
+                        error = checkField("主發明人姓名", error, Request.Form);
+                        error = checkField("提案揭露書", error, Request.Form);
+                        if (Request.Form["符合申請效益"].ToString() == "N" && Request.Form["申請專利"].ToString() != "N" && error == false)
+                        {
+                            error = true;
+                            WriteLiteral("<script>alert('送出失敗：符合申請效益為否時，「申請專利」欄位必為否');</script>");
+                        }
+                        if (Request.Form["符合申請效益"].ToString() == "Y" && string.IsNullOrEmpty(Request.Form["符合申請效益說明"].ToString()))
+                        {
+                            error = true;
+                            WriteLiteral("<script>alert('送出失敗：符合申請效益為是時，「符合申請效益說明」欄位必填');</script>");
+                        }
+                        if (log["_proposal"] == "1" && error == false)
+                        {
+                            var fname = new List<string>() { Request.Form["提案揭露書"].ToString(), Request.Form["其他補充文件"].ToString() };
+                            var fGetTime = new List<string>() { Request.Form["提案揭露書取得時間"].ToString(), Request.Form["其他補充文件取得時間"].ToString() };
+                            for (var f = 0; f < fname.Count; f++)
+                            {
+                                if (!string.IsNullOrEmpty(fname[f]) && string.IsNullOrEmpty(fGetTime[f]))
+                                {
+                                    error = true;
+                                    WriteLiteral("<script>alert('放行失敗：請退回經辦修改，以完成文件取得日期之填寫');</script>");
+                                }
+                            }
+                        }
+                        if (log["_proposal"] == "3" && error == false)
+                        {
+                            error = checkField("事務所案號", error, Request.Form);
+                            error = checkField("專利名稱", error, Request.Form);
+                            error = checkField("專利類型", error, Request.Form);
+                            error = checkField("彰銀應用分類", error, Request.Form);
+                            error = checkField("公股平台分類", error, Request.Form);
+                            error = checkField("專利說明", error, Request.Form);
+                            error = checkField("說明書交付日", error, Request.Form);
+                            error = checkField("說明書會稿完成日", error, Request.Form);
+                            error = checkField("專利申請日", error, Request.Form);
+                            error = checkField("智財局案號", error, Request.Form);
+                            if (!string.IsNullOrEmpty(Request.Form["核准日"].ToString()) && error == false)
+                            {
+                                error = checkField("證書編號", error, Request.Form);
+                                error = checkField("專利證書狀態", error, Request.Form);
+                                error = checkField("專利權起日", error, Request.Form);
+                                error = checkField("專利權訖日", error, Request.Form);
+                                error = checkField("公告日", error, Request.Form);
+                                error = checkField("證書費繳交完成日", error, Request.Form);
+                                error = checkField("專利證書影本收據", error, Request.Form);
+                            }
+                        }
+                        if (log["_proposal"] == "3" && log["FlowStatus"] == "1" && error == false)
+                        {
+                            var fname = new List<string>() { Request.Form["定稿說明書"].ToString(), Request.Form["審查意見分析會稿初審"].ToString(), Request.Form["審查意見分析會稿再審"].ToString(), Request.Form["申復理由書會稿初審"].ToString(), Request.Form["申復理由書會稿再審"].ToString(), Request.Form["核駁審定分析初審"].ToString(), Request.Form["核駁審定分析再審"].ToString(), Request.Form["再審查理由書"].ToString(), Request.Form["證書費年費繳交收據"].ToString(), Request.Form["專利證書影本收據"].ToString() };
+                            var fGetTime = new List<string>() { Request.Form["定稿說明書取得時間"].ToString(), Request.Form["審查意見分析會稿初審取得時間"].ToString(), Request.Form["審查意見分析會稿再審取得時間"].ToString(), Request.Form["申復理由書會稿初審取得時間"].ToString(), Request.Form["申復理由書會稿再審取得時間"].ToString(), Request.Form["核駁審定分析初審取得時間"].ToString(), Request.Form["核駁審定分析再審取得時間"].ToString(), Request.Form["再審查理由書取得時間"].ToString(), Request.Form["證書費年費繳交收據取得時間"].ToString(), Request.Form["專利證書影本收據取得時間"].ToString() };
+                            for (var f = 0; f < fname.Count; f++)
+                            {
+                                if (!string.IsNullOrEmpty(fname[f]) && string.IsNullOrEmpty(fGetTime[f]))
+                                {
+                                    error = true;
+                                    WriteLiteral("<script>alert('放行失敗：請退回經辦修改，以完成文件取得日期之填寫');</script>");
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        else
+        {
+            error = checkField("研發前檢索", error, Request.Form);
+            error = checkField("重大研發成本案件", error, Request.Form);
+            error = checkField("全新技術", error, Request.Form);
+            if (Request.Form["重大研發成本案件"].ToString() == "N" || Request.Form["全新技術"].ToString() == "N")
+            {
+                if (Request.Form["研發前檢索"].ToString() != "N" && error == false)
+                {
+                    error = true;
+                    WriteLiteral("<script>alert('送出失敗：重大研發成本案件或全新技術為否時，「研發前檢索」欄位必為否');</script>");
+                }
+            }
+            if (Request.Form["重大研發成本案件"].ToString() == "Y" && Request.Form["全新技術"].ToString() == "Y" && Request.Form["研發前檢索"].ToString() == "N" && error == false)
+            {
+                error = true;
+                WriteLiteral("<script>alert('送出失敗：重大研發成本案件及全新技術為是時，「研發前檢索」欄位必為是');</script>");
+            }
+            if (Request.Form["研發前檢索"].ToString() == "Y" && Request.Form.Files["研發前檢索檔"] == null && error == false)
+            {
+                error = true;
+                WriteLiteral("<script>alert('送出失敗：研發前檢索選是，應完成檢索資料上傳');</script>");
+            }
+        }
+        return error;
+    }
+    bool checkField(string FieldName, bool error, Microsoft.AspNetCore.Http.IFormCollection iform)
+    {
+        if (error == false)
+        {
+            if (string.IsNullOrEmpty(iform[FieldName].ToString()))
+            {
+                error = true;
+                WriteLiteral("<script>alert('儲存失敗：「" + @FieldName + "」欄位必填');</script>");
+            }
+        }
+        return error;
+    }
+    Boolean CheckBM(string EmpID, string RoleID)
+    {
+        using (SqlConnection cnn = new SqlConnection(Configuration["ConnectionStrings:by"]))
+        {
+            cnn.Open();
+            string SqlCmd = "SELECT 1 FROM CHBSC..SC_ROL_USR WHERE (USR_ID =@EmpID) and (ROL_ID=@RoleID)"; //查使用者角色
+            using (SqlCommand cmd = new SqlCommand(SqlCmd, cnn))
+            {
+                cmd.Parameters.AddWithValue("@EmpID", EmpID);
+                cmd.Parameters.AddWithValue("@RoleID", RoleID);
+                return cmd.ExecuteReader().HasRows;
+            }
+        }
+    }
+    void newLine(Microsoft.AspNetCore.Http.IFormCollection iform, string AddorDel)
+    {
+        ViewBag.rdLine = string.IsNullOrEmpty(iform["研發說明筆數"].ToString()) ? "1" : iform["研發說明筆數"].ToString();
+        if (AddorDel == "Add")
+        {
+            if (ViewBag.rdLine == "2")
+                ViewBag.rdLine = "3";
+            else
+                ViewBag.rdLine = "2";
+        }
+        if (AddorDel == "Del")  //20240410 數金處 薛伃庭 研發說明新增刪除一筆功能
+        {
+            if (ViewBag.rdLine == "3")
+                ViewBag.rdLine = "2";
+            else
+                ViewBag.rdLine = "1";
+        }
+    }
+
+    void UpdateFinTechPatnet_DataEdit(string no)
+    {
+        //更新FinTechPatnet_DataEdit事務所案號 => 專利所編號依照申請人帶入， 20241231 by 196099
+        try
+        {
+            SqlConnection con = new SqlConnection()
+            {
+                ConnectionString = Configuration["ConnectionStrings:by"]
+            };
+            con.Open();
+            if (Request.ContentLength > 0)
+            {
+                var update = new SqlCommand(" update iom..FinTechPatnet_DataEdit set 專利所編號='" + no + "' where DocNo='" + ViewBag.docno + "'", con);
+                var updCount = update.ExecuteNonQuery();
+
+            }
+            con.Close();
+        }
+        catch (Exception e) { }
+    }
+}

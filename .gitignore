@@ -1,0 +1,11 @@
+﻿# ?芾蕭頩?Site ??蝣?
+png/
+*.pdf
+*.msg
+*.7z
+*.zip
+*.docx
+_ps_stderr.log
+_ps_stdout.log
+deploy.log
+test_write.txt

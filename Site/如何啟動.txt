@@ -1,0 +1,78 @@
+==========================================================
+  新臺幣定期存款專案利率系統 - 本機啟動說明
+==========================================================
+
+【Claude 留下的狀態】
+- 所有 aspx/cs 都建好 (Program/NTD/ 14 個檔，加 Detail.ascx 共 15)
+- App_Code/UserInfo.cs (本機測試用 ─ 公司有正式版時刪掉)
+- SQL/01_CreateTables_NTD.sql 建表腳本
+- setup_and_run.bat / setup_and_run.ps1 自動部署腳本
+
+【我嘗試過但沒成功的部份】
+- 我試了多次自動啟動 (Win+R → cmd → bat → ps1)
+- cmd 視窗有開（看得到黑色 console）但 PowerShell 沒留下 log
+- 用 Edge 開 http://localhost:8080 顯示 ERR_CONNECTION_REFUSED
+- 表示 IIS Express 沒成功監聽 port 8080
+- Edge 之後變成最前景視窗，read-tier 規則讓我所有後續鍵盤滑鼠動作都被擋
+
+【最有可能的原因（請依序檢查）】
+
+(1) IIS Express 沒安裝
+    打開檔案總管，看 C:\Program Files\IIS Express\ 是否存在
+    若無 → 開 Visual Studio Installer 修改 VS 2022，勾「ASP.NET 與網頁開發」工作負載
+
+(2) 本機 SQL Server 服務沒啟動或實例名稱不在腳本搜尋清單
+    腳本搜尋的實例名：
+      .\SQLEXPRESS, (local)\SQLEXPRESS, localhost\SQLEXPRESS
+      (local), localhost, .
+      .\MSSQLSERVER, (local)\MSSQLSERVER
+    若你的實例名不在上面 → 改 Web.config 三條 Data Source
+
+(3) PowerShell 執行原則或編碼問題
+    我已把 .ps1 改為 UTF-8 BOM + 純 ASCII 內容，理論上沒問題
+    .bat 用 ExecutionPolicy Bypass 直接呼叫 PowerShell
+
+==========================================================
+  最快「保證能跑」的兩條路
+==========================================================
+
+[路線 1] 用 Visual Studio 2022 (推薦)
+  1. 開 Visual Studio 2022
+  2. 檔案 → 開啟 → 網站 (Open Web Site)
+  3. 選 D:\work\新台幣\Site\ 整個資料夾
+  4. 按 F5
+  → VS 自動啟動 IIS Express + 開瀏覽器，第一次會問是否安裝 IIS Express 按是
+
+[路線 2] 雙擊 setup_and_run.bat
+  1. 在檔案總管打開 D:\work\新台幣\Site\
+  2. 雙擊 setup_and_run.bat
+  3. cmd 視窗會出現，依序顯示 [1/4]~[4/4]
+  4. 看到 "Website is up" 後用瀏覽器開：
+       http://localhost:8080/Program/NTD/Main.aspx?SID=A0001
+  5. 若 cmd 出現紅字 [FAIL] → 看 deploy.log 裡哪一步失敗
+
+==========================================================
+  測試帳號 (URL 用 ?SID=員編)
+==========================================================
+  A0001  王經辦      5234 民生分行
+  A0002  李襄理      5234           (處理 status=1 的單)
+  A0003  陳經理      5234           (處理 status=2 的單)
+  B0001  金總行經辦  5185 總部分行  (處理 status=4 的單)
+  B0002  李總行科長  5185           (處理 status=6，決行要填利率別代號)
+
+  進入點：
+    /Program/NTD/Main.aspx       待處理列表 (新增/編輯)
+    /Program/NTD/Query.aspx      查詢
+    /Program/NTD/Approve.aspx    簽核/決行 (依登入者職位等級篩單)
+    /Program/NTD/Report.aspx     彙整表/稽催表 + 匯出 Excel
+
+==========================================================
+  帶回公司正式區（只要 aspx + cs）
+==========================================================
+  1. 把 Program\NTD\ 整個資料夾複製到既有 IntraWeb 站台的 Program\ 下
+  2. SQL\01_CreateTables_NTD.sql 在 chb_iom 資料庫只跑「第 1~4 段」
+     (BranchOnly、EMPLOYEE、SC_USER 公司已有，跳過第 5~7 段)
+  3. 公司既有 Web.config 不用改 (沿用 chb_iom / chb_pub / chb_pub1)
+  4. 公司既有 UserInfo.cs 不用動 (本機的 App_Code/UserInfo.cs 帶回前先刪)
+
+==========================================================
