@@ -1,0 +1,74 @@
+using CHBApp.BK.Models;
+
+namespace CHBApp.BK.Services;
+
+/// <summary>員工檔資料存取層 (對應原 BKAC.DBF)。In-Memory 模擬版本。</summary>
+public static class BkacRepository
+{
+    public static List<Bkac> Employees { get; } = new();
+    public static List<BkacResult> Results { get; } = new();
+    /// <summary>
+    /// 轉帳類別代碼 (依原 CHBK.EXE BACK_TYPE.DBF + 業務規則)
+    /// </summary>
+    public static List<PayKind> PayKinds { get; } = new()
+    {
+        new() { KIND_CODE = "50", KIND_NAME = "薪資(不列印)" },
+        new() { KIND_CODE = "51", KIND_NAME = "薪資" },
+        new() { KIND_CODE = "52", KIND_NAME = "股利" },
+        new() { KIND_CODE = "53", KIND_NAME = "匯款" },
+        new() { KIND_CODE = "54", KIND_NAME = "證券" },
+        new() { KIND_CODE = "60", KIND_NAME = "其他代繳費用" },
+        new() { KIND_CODE = "61", KIND_NAME = "水費" },
+        new() { KIND_CODE = "62", KIND_NAME = "電費" },
+        new() { KIND_CODE = "63", KIND_NAME = "電話費" },
+        new() { KIND_CODE = "64", KIND_NAME = "瓦斯費" },
+        new() { KIND_CODE = "65", KIND_NAME = "稅費" },
+        new() { KIND_CODE = "66", KIND_NAME = "保險費" },
+        new() { KIND_CODE = "67", KIND_NAME = "信用卡費" },
+        new() { KIND_CODE = "75", KIND_NAME = "雜項" },
+        new() { KIND_CODE = "76", KIND_NAME = "申購" },
+        new() { KIND_CODE = "82", KIND_NAME = "勞保費" },
+        new() { KIND_CODE = "86", KIND_NAME = "捐款" },
+        new() { KIND_CODE = "97", KIND_NAME = "由客戶自訂" }
+    };
+    public static Etpms Enterprise { get; } = new();
+
+    public static List<AppUser> Users { get; } = new()
+    {
+        new() { UserId = "1111",  Password = "1111",  UserName = "系統管理員" },
+        new() { UserId = "admin", Password = "admin", UserName = "Admin" }
+    };
+
+    public static void Seed()
+    {
+        if (Employees.Count > 0) return;
+        var rng = new Random(42);
+        var depts = new[] { "業務部", "財務部", "資訊部", "人事部", "行銷部" };
+        for (int i = 1; i <= 332; i++)   // 跟原 BACKUP/BKAC.DBF 同筆數
+        {
+            Employees.Add(new Bkac
+            {
+                EMP_NO    = $"E{i:0000}",
+                EMP_NAME  = $"員工{i:000}",
+                EMP_ACCNO = $"00951850{(100000 + i):000000}",
+                EMP_PAY   = 35_000m + rng.Next(0, 50_000),
+                EMP_PID   = i % 7 == 0 ? "" : $"A{rng.Next(100000000, 999999999)}",
+                EMP_FLAG  = "1",   // 1=轉存
+                EMP_FLAG1 = i % 11 == 0 ? "0" : "1",
+                EMP_KIND  = "01",
+                EMP_KNAME = "薪資",
+                MORF      = i % 31 == 0 ? "3" : (i % 17 == 0 ? "2" : "1"),
+                FAXNO     = "",
+                MAILADD   = i % 5 == 0 ? $"emp{i}@company.com" : "",
+                CONTENT   = depts[i % depts.Length]
+            });
+        }
+    }
+
+    public static int NextSeq() => Employees.Count + 1;
+
+    public static IEnumerable<Bkac> ValidForExport() =>
+        Employees.Where(e => e.EMP_ACCNO != "00000000000000" && e.EMP_PAY > 0);
+
+    public static decimal TotalPay() => ValidForExport().Sum(e => e.EMP_PAY);
+}

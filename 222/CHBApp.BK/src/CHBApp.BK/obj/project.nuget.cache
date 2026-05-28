@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "EjRArpVHm2BcKbw59Ih1/9TCSuCB8fU2BnwY1oQkfkrgbbYLoA3X06YKGNkLSktvw6zFZLyGIRs3XA760nXVFQ==",
+  "success": true,
+  "projectFilePath": "C:\\CHBAPP374\\CHBApp.BK\\src\\CHBApp.BK\\CHBApp.BK.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\ken\\.nuget\\packages\\system.text.encoding.codepages\\8.0.0\\system.text.encoding.codepages.8.0.0.nupkg.sha512"
+  ],
+  "logs": []
+}

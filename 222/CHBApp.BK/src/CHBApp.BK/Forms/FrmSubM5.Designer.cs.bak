@@ -1,0 +1,119 @@
+#nullable enable
+namespace CHBApp.BK.Forms;
+
+partial class FrmSubM5
+{
+    private System.ComponentModel.IContainer components = null;
+    private System.Windows.Forms.MenuStrip mainMenu;
+    private System.Windows.Forms.StatusStrip statusBar;
+    private System.Windows.Forms.ToolStripStatusLabel lblStatus;
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing && components != null) components.Dispose();
+        base.Dispose(disposing);
+    }
+
+    private System.Windows.Forms.ToolStripMenuItem _Top(string text, params System.Windows.Forms.ToolStripItem[] items)
+    {
+        var m = new System.Windows.Forms.ToolStripMenuItem(text);
+        if (items.Length > 0) m.DropDownItems.AddRange(items);
+        return m;
+    }
+    private System.Windows.Forms.ToolStripMenuItem _Item(string text, EventHandler? handler = null)
+    {
+        var i = new System.Windows.Forms.ToolStripMenuItem(text);
+        if (handler != null) i.Click += handler;
+        return i;
+    }
+
+    private void InitializeComponent()
+    {
+        this.mainMenu  = new System.Windows.Forms.MenuStrip();
+        this.statusBar = new System.Windows.Forms.StatusStrip();
+        this.lblStatus = new System.Windows.Forms.ToolStripStatusLabel();
+        this.SuspendLayout();
+
+        // === 員工資料作業 (5-1) ===
+        var mOtherImport = _Top("其他格式讀入(&O)",
+            _Item("磁片輸入(EXCEL)--訊連CO專用", miOtherImportXunLian_Click));
+        var mEmp = _Top("員工資料作業(&E)",
+            _Item("員工基本資料登錄",     miEmpReg_Click),
+            _Item("員工資料查詢",         miEmpQuery_Click),
+            new System.Windows.Forms.ToolStripSeparator(),
+            _Item("員工資料文字檔轉入",   miEmpImport_Click),
+            _Item("薪資磁片重新讀入",     miSalReimport_Click),
+            mOtherImport);
+
+        // === 薪資輸入 (5-2) ===
+        // 順序對齊舊版 SUB_M5.MPR BAR 1-9
+        var mSal = _Top("薪資輸入(&I)",
+            _Item("薪資輸入－個人",           miSalIndividual_Click),
+            _Item("薪資輸入－全公司",         miSalAll_Click),
+            _Item("清除本月薪資",             miSalClear_Click),
+            _Item("薪資輸入－代號",           miSalByCode_Click),
+            _Item("薪資輸入－姓名",           miSalByName_Click),
+            _Item("薪資輸入－帳號",           miSalByAccount_Click),
+            _Item("薪資整批輸入(Excel格式)",  miSalImport_Click),
+            _Item("未建員工資料薪資輸入",     miSalUnreg_Click),
+            _Item("整批變更薪資資料",         miSalBatch_Click));
+
+        // === 列印作業 (5-3) - 對應原 BK301 / BK302 / BK202 ===
+        var mPrint = _Top("列印作業(&R)",
+            _Item("列印本月薪資 (BK301)",       miPrint1_Click),
+            _Item("列印本月薪資二 (BK302)",     miPrint2_Click),
+            _Item("員工薪資資料檔維護 (BK202)", miPrintHub_Click));
+
+        // === 轉出磁片作業 (5-4) - 平面選單，對齊舊版 SUB_M5.MPR BAR 1-9 ===
+        var mExport = _Top("轉出磁片作業(&T)",
+            _Item("轉換磁片作業(百年規格--全體)",         miExportAllNew_Click),
+            _Item("轉換磁片作業(百年規格--個別)",         miExportIndNew_Click),
+            _Item("轉換磁片作業(百年規格--外幣薪資入戶)", miExportForeignNew_Click),
+            _Item("分組轉出磁片作業(百年規格)",           miExportGroupNew_Click),
+            _Item("中連股利(台一證)-->本行格式",          miMidLink_Click),
+            _Item("轉換磁片作業(舊規格--全體)",           miExportAll_Click),
+            _Item("轉換磁片作業(舊規格--個別)",           miExportIndividual_Click),
+            _Item("轉換磁片作業(舊規格--外幣薪資入戶)",   miExportForeignI_Click),
+            _Item("分組轉出磁片作業(舊規格)",             miExportGroup_Click));
+
+        // === 二次轉扣帳作業 ===
+        var mSecond = _Top("二次轉扣帳作業(&D)",
+            _Item("結果磁片匯入",       miSecImport_Click),
+            _Item("失敗明細查詢",       miSecFail_Click),
+            _Item("成功明細查詢",       miSecOk_Click),
+            _Item("產生二次處理磁片(舊規格)", miSecExpOld_Click),
+            _Item("產生二次處理磁片(百年規格)", miSecExpNew_Click));
+
+        var mPwd = _Item("密碼作業(&P)",   miPassword_Click);
+        var mMnt = _Item("系統維護(&S)",   miMaintain_Click);
+        var mHlp = _Item("說明(&H)",       miHelp_Click);
+        var mXit = _Item("離開(&X)",       miExit_Click);
+
+        this.mainMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[]
+        {
+            mEmp, mSal, mPrint, mExport, mSecond, mPwd, mMnt, mHlp, mXit
+        });
+        this.mainMenu.Location = new System.Drawing.Point(0, 0);
+        this.mainMenu.Name = "mainMenu";
+
+        // statusBar
+        this.statusBar.Items.AddRange(new System.Windows.Forms.ToolStripItem[] { this.lblStatus });
+        this.lblStatus.Name = "lblStatus";
+        this.lblStatus.Text = "員工薪資撥帳系統";
+
+        // FrmSubM5
+        this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
+        this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+        this.ClientSize = new System.Drawing.Size(1100, 700);
+        this.Controls.Add(this.mainMenu);
+        this.Controls.Add(this.statusBar);
+        this.IsMdiContainer = true;
+        this.MainMenuStrip = this.mainMenu;
+        this.Name = "FrmSubM5";
+        this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
+        this.Text = "員工薪資撥帳管理系統";
+        this.WindowState = System.Windows.Forms.FormWindowState.Maximized;
+        this.ResumeLayout(false);
+        this.PerformLayout();
+    }
+}

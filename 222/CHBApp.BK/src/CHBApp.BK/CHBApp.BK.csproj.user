@@ -1,0 +1,114 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup />
+  <ItemGroup>
+    <Compile Update="Common\CrudFormBase.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Common\ExportFormBase.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Forms\BK101.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Forms\BK102.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Forms\BK103.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Forms\BK104.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Forms\BK105.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Forms\BK106.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Forms\BK107.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Forms\BK108.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Forms\BK109.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Forms\BK110.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Forms\BK111.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Forms\BK201.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Forms\BK202.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Forms\BK301.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Forms\BK302.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Forms\BK401.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Forms\BK4011.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Forms\BK4012.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Forms\BK402.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Forms\BK403.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Forms\BK404.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Forms\BK405.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Forms\BK406.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Forms\BK407.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Forms\BK408.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Forms\BK501.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Forms\BK502.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Forms\BK503.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Forms\BK504.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Forms\BK505.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Forms\BK_EmpImport.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Forms\FrmLogin.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Forms\FrmPasswordChange.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Forms\FrmSubM5.cs">
+      <SubType>Form</SubType>
+    </Compile>
+  </ItemGroup>
+</Project>

@@ -1,0 +1,24 @@
+using System;
+using System.Windows.Forms;
+using CHBApp.BK.Forms;
+using CHBApp.BK.Services;
+
+namespace CHBApp.BK;
+
+internal static class Program
+{
+    [STAThread]
+    private static void Main()
+    {
+        ApplicationConfiguration.Initialize();
+        Application.SetHighDpiMode(HighDpiMode.SystemAware);
+
+        // 載入 mock 資料 (332 員工，跟原 BACKUP/BKAC.DBF 同筆數)
+        BkacRepository.Seed();
+
+        using var login = new FrmLogin();
+        if (login.ShowDialog() != DialogResult.OK) return;
+
+        Application.Run(new FrmSubM5(login.LoggedUser!));   // 員工薪資撥帳子系統主畫面
+    }
+}

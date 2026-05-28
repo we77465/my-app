@@ -1,0 +1,104 @@
+using System.Windows.Forms;
+using CHBApp.BK.Common;
+using CHBApp.BK.Models;
+using CHBApp.BK.Services;
+
+namespace CHBApp.BK.Forms;
+
+/// <summary>BK108 未建員工資料薪資輸入 (建立尚未存在於 BKAC.DBF 的員工薪資)</summary>
+public partial class BK108 : Form
+{
+    private int _addedCount = 0;
+
+    public BK108()
+    {
+        InitializeComponent();
+        cbFlag.Items.AddRange(new object[] { "1 - 轉提", "2 - 轉存" });
+        cbMorf.Items.AddRange(new object[] { "1 - 本國人", "2 - 外國人", "3 - 公司" });
+        cbMorf.SelectedIndex = 0;
+        cbFlag.SelectedIndex = 1; // 預設 2 - 轉存
+        cbKind.DisplayMember = nameof(PayKind.KIND_NAME);
+        cbKind.DataSource = new BindingSource(BkacRepository.PayKinds, null);
+        var pk51 = BkacRepository.PayKinds.FirstOrDefault(k => k.KIND_CODE == "51");
+        if (pk51 != null) cbKind.SelectedItem = pk51;
+        UpdateCustomKindVisibility();
+        UpdatePos();
+    }
+
+    private void UpdateCustomKindVisibility()
+    {
+        bool is97 = (cbKind.SelectedItem as PayKind)?.KIND_CODE == "97";
+        lblCustomKind.Visible = is97; txtCustomKind.Visible = is97;
+    }
+
+    private void UpdatePos() => lblPos.Text = $"已新增 {_addedCount} 筆未建員工薪資";
+
+    private void ClearForm()
+    {
+        txtEmpNo.Text = ""; txtEmpName.Text = ""; txtPid.Text = ""; txtAccNo.Text = "";
+        numPay.Value = 0;
+        cbFlag.SelectedIndex = 1;
+        cbMorf.SelectedIndex = 0;
+        var pk51 = BkacRepository.PayKinds.FirstOrDefault(k => k.KIND_CODE == "51");
+        if (pk51 != null) cbKind.SelectedItem = pk51;
+        rbCheckYes.Checked = true; rbCheckNo.Checked = false;
+        txtMail.Text = ""; txtContent.Text = "";
+        txtCustomKind.Text = "";
+        UpdateCustomKindVisibility();
+        txtEmpNo.Focus();
+    }
+
+    private void btnNew_Click(object s, EventArgs e) => ClearForm();
+    private void btnCancel_Click(object s, EventArgs e) => ClearForm();
+
+    private void btnSave_Click(object s, EventArgs e)
+    {
+        var empNo = txtEmpNo.Text.Trim();
+        var empName = txtEmpName.Text.Trim();
+        var accNo = txtAccNo.Text.Trim();
+        if (string.IsNullOrEmpty(empNo)) { MessageBox.Show("請輸入員工編號"); txtEmpNo.Focus(); return; }
+        if (string.IsNullOrEmpty(empName)) { MessageBox.Show("請輸入員工姓名"); txtEmpName.Focus(); return; }
+        if (string.IsNullOrEmpty(accNo)) { MessageBox.Show("請輸入存款帳號"); txtAccNo.Focus(); return; }
+        if (BkacRepository.Employees.Any(x => x.EMP_NO == empNo))
+        {
+            MessageBox.Show($"員工編號 {empNo} 已存在於 BKAC.DBF，請改用「薪資輸入-代號」功能", "注意");
+            return;
+        }
+
+        var pk = cbKind.SelectedItem as PayKind;
+        var rec = new Bkac
+        {
+            EMP_NO = empNo,
+            EMP_NAME = empName,
+            EMP_PID = txtPid.Text.Trim(),
+            EMP_ACCNO = accNo,
+            EMP_PAY = numPay.Value,
+            EMP_FLAG = (cbFlag.SelectedItem?.ToString() ?? "2").Substring(0, 1),
+            EMP_KIND = pk?.KIND_CODE ?? "51",
+            EMP_KNAME = pk?.KIND_CODE == "97" ? txtCustomKind.Text.Trim() : (pk?.KIND_NAME ?? "薪資"),
+            EMP_FLAG1 = rbCheckYes.Checked ? "Y" : "N",
+            MORF = (cbMorf.SelectedItem?.ToString() ?? "1 - 本國人").Substring(0, 1),
+            MAILADD = txtMail.Text.Trim(),
+            CONTENT = txtContent.Text.Trim(),
+            FAXNO = ""
+        };
+        BkacRepository.Employees.Add(rec);
+        _addedCount++;
+        UpdatePos();
+        MessageBox.Show($"已新增 {empName} ({empNo}) 之未建員工薪資資料", "訊息");
+        ClearForm();
+    }
+
+    private BkReportPrinter.ReportConfig MakeCfg()
+    {
+        // 列印剛剛新增進去的最末筆 (若無則列印全部)
+        var list = _addedCount > 0
+            ? BkacRepository.Employees.Skip(BkacRepository.Employees.Count - _addedCount).ToList()
+            : BkacRepository.Employees.ToList();
+        return new() { Type = BkReportPrinter.ReportType.PayrollList, Title = "未建員工薪資清冊", Employees = list };
+    }
+    private void btnPreview_Click(object s, EventArgs e) => BkReportPrinter.ShowPreview(MakeCfg());
+    private void btnPrint_Click(object s, EventArgs e) => BkReportPrinter.Print(MakeCfg());
+    private void btnExit_Click(object s, EventArgs e) => Close();
+    private void cbKind_SelectedIndexChanged(object s, EventArgs e) => UpdateCustomKindVisibility();
+}

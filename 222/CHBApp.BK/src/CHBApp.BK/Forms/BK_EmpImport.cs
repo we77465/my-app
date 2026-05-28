@@ -1,0 +1,167 @@
+using System.Globalization;
+using System.IO;
+using System.Text;
+using System.Windows.Forms;
+using CHBApp.BK.Models;
+using CHBApp.BK.Services;
+
+namespace CHBApp.BK.Forms;
+
+/// <summary>
+/// 員工資料文字檔轉入 - 對應原 CHBK.EXE 員工資料作業底下的「員工資料文字檔轉入」
+/// 依「員工資料磁片輸入規格.DOC」規格 (BKAC.TXT 固定欄位 56 bytes)：
+///   員工編號 emp_no    pos  1, len 10, X
+///   員工姓名 emp_name  pos 11, len 10, X
+///   存款帳號 emp_accno pos 21, len 14, X
+///   薪資金額 emp_pay   pos 35, len 12, N (2dp, 不含小數點)
+///   身份證號 emp_pid   pos 47, len 10, X
+/// </summary>
+public partial class BK_EmpImport : Form
+{
+    static BK_EmpImport()
+    {
+        // 一次性註冊 Big5 (cp950) provider
+        try { Encoding.RegisterProvider(CodePagesEncodingProvider.Instance); } catch { }
+    }
+
+    public BK_EmpImport() => InitializeComponent();
+
+    private void btnPick_Click(object s, EventArgs e)
+    {
+        using var d = new OpenFileDialog
+        {
+            Filter = "員工資料文字檔 (*.txt;*.dat)|*.txt;*.dat|所有檔 (*.*)|*.*",
+            FileName = "BKAC.TXT"
+        };
+        if (d.ShowDialog(this) == DialogResult.OK) txtPath.Text = d.FileName;
+    }
+
+    private void btnRun_Click(object s, EventArgs e)
+    {
+        log.Clear();
+        var path = txtPath.Text.Trim();
+        if (!File.Exists(path))
+        {
+            log.AppendText("錯誤：檔案不存在！請檢查路徑。\r\n");
+            return;
+        }
+
+        Encoding enc;
+        try { enc = Encoding.GetEncoding(950); }
+        catch { enc = Encoding.UTF8; }
+
+        int total = 0, ok = 0, err = 0, replace = 0, addn = 0;
+        try
+        {
+            var bytes = File.ReadAllBytes(path);
+            // 切行 (CRLF / LF)
+            var lines = new List<byte[]>();
+            int start = 0;
+            for (int i = 0; i < bytes.Length; i++)
+            {
+                if (bytes[i] == 0x0A)
+                {
+                    int end = (i > 0 && bytes[i - 1] == 0x0D) ? i - 1 : i;
+                    lines.Add(bytes[start..end]);
+                    start = i + 1;
+                }
+            }
+            if (start < bytes.Length) lines.Add(bytes[start..]);
+
+            foreach (var lineBytes in lines)
+            {
+                if (lineBytes.Length == 0) continue;
+                total++;
+
+                if (lineBytes.Length < 56)
+                {
+                    err++;
+                    log.AppendText($"L{total}: 長度 {lineBytes.Length} 不足 56 bytes，跳過\r\n");
+                    continue;
+                }
+
+                var emp_no    = enc.GetString(lineBytes, 0,  10).Trim();
+                var emp_name  = enc.GetString(lineBytes, 10, 10).Trim();
+                var emp_accno = enc.GetString(lineBytes, 20, 14).Trim();
+                var payRaw    = enc.GetString(lineBytes, 34, 12).Trim();
+                var emp_pid   = enc.GetString(lineBytes, 46, 10).Trim();
+
+                if (string.IsNullOrEmpty(emp_no))
+                {
+                    err++;
+                    log.AppendText($"L{total}: 員工編號空白，跳過\r\n");
+                    continue;
+                }
+
+                if (!decimal.TryParse(payRaw, NumberStyles.Number, CultureInfo.InvariantCulture, out var pay))
+                    pay = 0;
+                pay = pay / 100m;   // 規格：2dp 不含小數點
+
+                var existing = BkacRepository.Employees.FirstOrDefault(x => x.EMP_NO == emp_no);
+                if (existing != null)
+                {
+                    if (rbReplace.Checked)
+                    {
+                        existing.EMP_NAME  = emp_name;
+                        existing.EMP_ACCNO = emp_accno.PadRight(14, '0').Substring(0, 14);
+                        existing.BASE_SAL  = pay; existing.ALLOWANCE = 0; existing.OVERTIME = 0; existing.DEDUCTION = 0;
+                        existing.EMP_PID   = emp_pid;
+                        replace++;
+                    }
+                    else
+                    {
+                        log.AppendText($"L{total}: {emp_no} 已存在，依設定不覆寫\r\n");
+                    }
+                }
+                else
+                {
+                    BkacRepository.Employees.Add(new Bkac
+                    {
+                        EMP_NO    = emp_no,
+                        EMP_NAME  = emp_name,
+                        EMP_ACCNO = emp_accno.PadRight(14, '0').Substring(0, 14),
+                        BASE_SAL  = pay,
+                        EMP_PID   = emp_pid,
+                        EMP_FLAG  = "2",
+                        EMP_FLAG1 = string.IsNullOrEmpty(emp_pid) ? "N" : "Y",
+                        EMP_KIND  = "51",
+                        EMP_KNAME = "薪資",
+                        MORF      = "1"
+                    });
+                    addn++;
+                }
+                ok++;
+            }
+        }
+        catch (Exception ex)
+        {
+            log.AppendText("錯誤：" + ex.Message + "\r\n");
+            return;
+        }
+
+        lblTotal.Text   = $"資料總筆數：{total}";
+        lblOk.Text      = $"已處理筆數：{ok}";
+        lblReplace.Text = $"覆寫筆數　：{replace}";
+        lblAdd.Text     = $"新增筆數　：{addn}";
+        lblErr.Text     = $"錯誤筆數　：{err}";
+        log.AppendText($"\r\n=== 完成 ===\r\n總 {total} / 成功 {ok} / 覆寫 {replace} / 新增 {addn} / 錯誤 {err}\r\n");
+        MessageBox.Show($"員工資料文字檔轉入完成！\n總 {total} 筆，新增 {addn}，覆寫 {replace}", "訊息");
+    }
+
+    private void btnFormat_Click(object s, EventArgs e)
+    {
+        log.Clear();
+        log.AppendText("========= 員工資料文字檔規格 (BKAC.TXT) =========\r\n");
+        log.AppendText("欄位      代號       位置  長度  型態  備註\r\n");
+        log.AppendText("------------------------------------------------\r\n");
+        log.AppendText("員工編號  emp_no       1   10   X\r\n");
+        log.AppendText("員工姓名  emp_name    11   10   X\r\n");
+        log.AppendText("存款帳號  emp_accno   21   14   X\r\n");
+        log.AppendText("薪資金額  emp_pay     35   12   N    2dp 不含小數點\r\n");
+        log.AppendText("身份證號  emp_pid     47   10   X\r\n");
+        log.AppendText("------------------------------------------------\r\n");
+        log.AppendText("總長度：56 Bytes / 編碼：CP950 (Big5)\r\n");
+    }
+
+    private void btnExit_Click(object s, EventArgs e) => Close();
+}
