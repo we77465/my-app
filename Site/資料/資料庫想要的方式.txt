@@ -1,0 +1,37 @@
+DocType
+DocType	varchar	no	2	     	     	no	no	no	Chinese_Taiwan_Stroke_BIN
+DocNo	varchar	no	50	     	     	no	no	no	Chinese_Taiwan_Stroke_BIN
+BrNo	nvarchar	no	12	     	     	yes	(n/a)	(n/a)	Chinese_Taiwan_Stroke_BIN
+EmpId	varchar	no	6	     	     	yes	no	yes	Chinese_Taiwan_Stroke_BIN
+RecordDate	datetime	no	8	     	     	yes	(n/a)	(n/a)	NULL
+DataFlag	varchar	no	1	     	     	yes	no	yes	Chinese_Taiwan_Stroke_BIN
+FormType	varchar	no	1	     	     	yes	no	yes	Chinese_Taiwan_Stroke_BIN
+YYMM	varchar	no	8	     	     	yes	no	yes	Chinese_Taiwan_Stroke_BIN
+Sign1	varchar	no	6	     	     	yes	no	yes	Chinese_Taiwan_Stroke_BIN
+Action1	varchar	no	10	     	     	yes	no	yes	Chinese_Taiwan_Stroke_BIN
+SignDate1	datetime	no	8	     	     	yes	(n/a)	(n/a)	NULL
+SignComment1	text	no	16	     	     	yes	(n/a)	(n/a)	Chinese_Taiwan_Stroke_BIN
+Sign2	varchar	no	6	     	     	yes	no	yes	Chinese_Taiwan_Stroke_BIN
+Action2	varchar	no	10	     	     	yes	no	yes	Chinese_Taiwan_Stroke_BIN
+SignDate2	datetime	no	8	     	     	yes	(n/a)	(n/a)	NULL
+SignComment2	text	no	16	     	     	yes	(n/a)	(n/a)	Chinese_Taiwan_Stroke_BIN
+DecManager	varchar	no	6	     	     	yes	no	yes	Chinese_Taiwan_Stroke_BIN
+DecDate	datetime	no	8	     	     	yes	(n/a)	(n/a)	NULL
+FlowStatus	varchar	no	2	     	     	yes	no	yes	Chinese_Taiwan_Stroke_BIN
+Ver	smallint	no	2	5    	0    	yes	(n/a)	(n/a)	NULL
+
+
+這是公司其中一個現有的table
+
+BC
+BC	BC0920882370	8237	030008	2903-09-22 00:00:00.000		NULL	99209	030008	D	2003-09-24 00:00:00.000		NULL	NULL	NULL	NULL	030008	2003-09-24 00:00:00.000	3	1
+
+類似這樣
+
+GG	GG202605051156093529269	9269	204963	2026-05-07 10:38:16.410	NULL	NULL	11505	088232	D	2026-05-07 10:47:18.397	NULL	088651	D	2026-05-07 17:09:19.533	NULL	180845	2026-05-07 10:38:16.000	3	1
+
+
+※狀態：0退回、1已填報、2已放行、3已決行、4總行確認
+　動作：D同意、B退回
+
+參照這個table做出重寫出NTD
